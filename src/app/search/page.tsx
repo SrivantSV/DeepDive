@@ -4,6 +4,21 @@ import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
+import {
+    Search,
+    MapPin,
+    BedDouble,
+    Bath,
+    Ruler,
+    LayoutGrid,
+    List,
+    Filter,
+    ChevronDown,
+    Sparkles,
+    ArrowRight,
+    SearchX,
+    ImageIcon,
+} from 'lucide-react'
 
 interface Listing {
     mlsId: number
@@ -117,8 +132,9 @@ function SearchContent() {
             <header className="bg-white border-b sticky top-0 z-50">
                 <div className="max-w-7xl mx-auto px-4 py-3">
                     <div className="flex items-center gap-6">
-                        <Link href="/" className="text-xl font-bold text-blue-600">
-                            🏠 HomeInsight AI
+                        <Link href="/" className="text-xl font-bold text-blue-600 flex items-center gap-2">
+                            <Search className="w-6 h-6" />
+                            HomeInsight AI
                         </Link>
 
                         {/* Search Bar */}
@@ -265,7 +281,9 @@ function SearchContent() {
                     </div>
                 ) : listings.length === 0 ? (
                     <div className="text-center py-20">
-                        <div className="text-6xl mb-4">🏠</div>
+                        <div className="flex justify-center mb-4">
+                            <SearchX className="w-16 h-16 text-gray-300" />
+                        </div>
                         <h2 className="text-xl font-semibold text-gray-900 mb-2">No listings found</h2>
                         <p className="text-gray-600 mb-4">Try adjusting your search or filters</p>
                         <Link href="/" className="text-blue-600 hover:underline">
@@ -274,8 +292,8 @@ function SearchContent() {
                     </div>
                 ) : (
                     <div className={`grid gap-6 ${viewMode === 'grid'
-                            ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
-                            : 'grid-cols-1'
+                        ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
+                        : 'grid-cols-1'
                         }`}>
                         {listings.map((listing) => (
                             <Link
@@ -294,16 +312,16 @@ function SearchContent() {
                                             className="object-cover group-hover:scale-105 transition-transform duration-300"
                                         />
                                     ) : (
-                                        <div className="absolute inset-0 bg-gray-200 flex items-center justify-center text-4xl">
-                                            🏠
+                                        <div className="absolute inset-0 bg-gray-200 flex items-center justify-center text-gray-400">
+                                            <ImageIcon className="w-12 h-12" />
                                         </div>
                                     )}
 
                                     {/* Status Badge */}
                                     <div className="absolute top-3 left-3">
                                         <span className={`px-2 py-1 rounded text-xs font-semibold ${listing.mls.status === 'Active'
-                                                ? 'bg-green-500 text-white'
-                                                : 'bg-yellow-500 text-white'
+                                            ? 'bg-green-500 text-white'
+                                            : 'bg-yellow-500 text-white'
                                             }`}>
                                             {listing.mls.status}
                                         </span>
@@ -319,9 +337,10 @@ function SearchContent() {
                                     )}
 
                                     {/* AI Badge */}
-                                    <div className="absolute bottom-3 right-3">
-                                        <span className="px-2 py-1 bg-purple-600 text-white rounded text-xs font-semibold">
-                                            🤖 AI Insights
+                                    <div className="absolute top-4 right-4">
+                                        <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/95 backdrop-blur-md text-purple-700 rounded-lg text-xs font-bold shadow-lg shadow-purple-900/10 border border-purple-100">
+                                            <Sparkles className="w-3.5 h-3.5 fill-purple-600/20" />
+                                            AI Insights
                                         </span>
                                     </div>
                                 </div>

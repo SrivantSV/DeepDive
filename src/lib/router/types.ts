@@ -34,6 +34,12 @@ export interface PropertyContext {
     zipCode: string
     city: string
     state: string
+    price?: number
+    bedrooms?: number
+    bathrooms?: number
+    sqft?: number
+    yearBuilt?: number
+    lotSize?: number
     mlsId?: string
     photos?: string[]
     listingData?: Record<string, unknown>
@@ -107,8 +113,15 @@ export interface FormattedResponse {
     answer: string
     sources: string[]
     confidence: 'high' | 'medium' | 'low'
-    followUpSuggestions?: string[]
+    followUpSuggestions: string[]
     askSellerButton?: AskSellerButton
+}
+
+export interface RouterResponse extends FormattedResponse {
+    responseTime: number
+    category: string
+    validated?: boolean
+    corrections?: Array<{ field: string; original: any; corrected: any; reason: string }>
 }
 
 // Question patterns for classification

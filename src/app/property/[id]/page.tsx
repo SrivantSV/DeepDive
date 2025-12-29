@@ -4,6 +4,28 @@ import { useState, useEffect, useRef } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
+import {
+    ArrowLeft,
+    Share2,
+    Heart,
+    MapPin,
+    BedDouble,
+    Bath,
+    Ruler,
+    Calendar,
+    DollarSign,
+    Car,
+    Thermometer,
+    Wind,
+    Droplet,
+    Layers,
+    Sparkles,
+    Send,
+    Bot,
+    ArrowRight,
+    ImageIcon,
+    MessageCircle
+} from 'lucide-react'
 
 interface Listing {
     mlsId: number
@@ -171,18 +193,22 @@ export default function PropertyPage() {
             <header className="bg-white border-b sticky top-0 z-50">
                 <div className="max-w-7xl mx-auto px-4 py-3">
                     <div className="flex items-center justify-between">
-                        <Link href="/" className="text-xl font-bold text-blue-600">
-                            🏠 HomeInsight AI
+                        <Link href="/" className="text-xl font-bold text-blue-600 flex items-center gap-2">
+                            <Sparkles className="w-6 h-6" />
+                            HomeInsight AI
                         </Link>
                         <div className="flex items-center gap-4">
-                            <Link href="/search" className="text-gray-600 hover:text-gray-900">
-                                ← Back to search
+                            <Link href="/search" className="text-gray-600 hover:text-gray-900 flex items-center gap-1">
+                                <ArrowLeft className="w-4 h-4" />
+                                Back to search
                             </Link>
-                            <button className="px-4 py-2 border rounded-lg hover:bg-gray-50">
-                                ❤️ Save
+                            <button className="px-4 py-2 border rounded-lg hover:bg-gray-50 flex items-center gap-2 text-gray-700">
+                                <Heart className="w-4 h-4" />
+                                Save
                             </button>
-                            <button className="px-4 py-2 border rounded-lg hover:bg-gray-50">
-                                📤 Share
+                            <button className="px-4 py-2 border rounded-lg hover:bg-gray-50 flex items-center gap-2 text-gray-700">
+                                <Share2 className="w-4 h-4" />
+                                Share
                             </button>
                         </div>
                     </div>
@@ -203,8 +229,8 @@ export default function PropertyPage() {
                                     className="object-cover"
                                 />
                             ) : (
-                                <div className="absolute inset-0 bg-gray-200 flex items-center justify-center text-6xl">
-                                    🏠
+                                <div className="absolute inset-0 bg-gray-200 flex items-center justify-center text-gray-400">
+                                    <ImageIcon className="w-20 h-20" />
                                 </div>
                             )}
                         </div>
@@ -238,8 +264,8 @@ export default function PropertyPage() {
                             <div className="flex items-center gap-4 mb-2">
                                 <h1 className="text-3xl font-bold text-gray-900">{formatPrice(listing.listPrice)}</h1>
                                 <span className={`px-3 py-1 rounded-full text-sm font-semibold ${listing.mls.status === 'Active'
-                                        ? 'bg-green-100 text-green-800'
-                                        : 'bg-yellow-100 text-yellow-800'
+                                    ? 'bg-green-100 text-green-800'
+                                    : 'bg-yellow-100 text-yellow-800'
                                     }`}>
                                     {listing.mls.status}
                                 </span>
@@ -278,7 +304,10 @@ export default function PropertyPage() {
                                 </div>
                                 <div className="text-sm text-gray-500">Lot size</div>
                             </div>
-                            <div className="bg-white rounded-xl p-4 text-center shadow-sm">
+                            <div className="bg-white rounded-xl p-4 text-center shadow-sm flex flex-col items-center justify-center">
+                                <div className="mb-2 p-2 bg-orange-50 text-orange-600 rounded-lg">
+                                    <Car className="w-5 h-5" />
+                                </div>
                                 <div className="text-xl font-bold text-gray-900">
                                     {listing.property.garageSpaces || 0}
                                 </div>
@@ -342,14 +371,20 @@ export default function PropertyPage() {
                     <div className="lg:col-span-1">
                         <div className="bg-white rounded-xl shadow-sm sticky top-20 overflow-hidden">
                             {/* Chat Header */}
-                            <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4">
+                            <div className="bg-white border-b border-slate-100 p-4">
                                 <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-xl">
-                                        🤖
+                                    <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-full flex items-center justify-center text-white shadow-lg shadow-blue-600/20">
+                                        <Sparkles className="w-5 h-5" />
                                     </div>
                                     <div>
-                                        <div className="font-semibold">AI Property Assistant</div>
-                                        <div className="text-sm text-blue-100">Ask anything about this property</div>
+                                        <div className="font-bold text-slate-900">AI Assistant</div>
+                                        <div className="text-xs text-green-600 font-medium flex items-center gap-1">
+                                            <span className="relative flex h-2 w-2">
+                                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                                                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                                            </span>
+                                            Online
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -365,7 +400,12 @@ export default function PropertyPage() {
                                                 onClick={() => sendMessage(q)}
                                                 className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-full text-sm hover:bg-gray-200 transition-colors"
                                             >
-                                                {q}
+                                                <div className="flex items-center gap-1">
+                                                    <div className="p-1 bg-blue-50 text-blue-600 rounded-full">
+                                                        <DollarSign className="w-4 h-4" />
+                                                    </div>
+                                                    {q}
+                                                </div>
                                             </button>
                                         ))}
                                     </div>
@@ -376,7 +416,9 @@ export default function PropertyPage() {
                             <div className="h-80 overflow-y-auto p-4 space-y-4">
                                 {messages.length === 0 ? (
                                     <div className="text-center text-gray-400 py-8">
-                                        <div className="text-4xl mb-2">💬</div>
+                                        <div className="flex justify-center mb-2">
+                                            <MessageCircle className="w-12 h-12 text-blue-200" />
+                                        </div>
                                         <div>Ask me anything about this property!</div>
                                     </div>
                                 ) : (
@@ -387,8 +429,8 @@ export default function PropertyPage() {
                                         >
                                             <div
                                                 className={`max-w-[85%] rounded-lg p-3 ${msg.role === 'user'
-                                                        ? 'bg-blue-600 text-white'
-                                                        : 'bg-gray-100 text-gray-800'
+                                                    ? 'bg-blue-600 text-white'
+                                                    : 'bg-gray-100 text-gray-800'
                                                     }`}
                                             >
                                                 <div className="whitespace-pre-wrap text-sm">{msg.content}</div>

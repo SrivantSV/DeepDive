@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { routeQuestion, RouterInput } from '@/lib/router'
+import { routeQuestion } from '@/lib/router'
 
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json()
 
-        const input: RouterInput = {
+        const input = {
             question: body.question,
             propertyContext: body.propertyContext || {
                 address: '1148 Greenbrook Drive, Danville, CA 94526',
@@ -14,9 +14,7 @@ export async function POST(request: NextRequest) {
                 zipCode: '94526',
                 city: 'Danville',
                 state: 'CA',
-                photos: [],
             },
-            conversationHistory: body.conversationHistory || [],
         }
 
         console.log(`[Chat API] Processing question: "${input.question}"`)
@@ -58,7 +56,7 @@ export async function GET(request: NextRequest) {
         }, { status: 400 })
     }
 
-    const input: RouterInput = {
+    const input = {
         question,
         propertyContext: {
             address: '1148 Greenbrook Drive, Danville, CA 94526',
@@ -67,7 +65,6 @@ export async function GET(request: NextRequest) {
             zipCode: '94526',
             city: 'Danville',
             state: 'CA',
-            photos: [],
         },
     }
 

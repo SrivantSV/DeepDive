@@ -3,6 +3,18 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import {
+  Search,
+  Brain,
+  Database,
+  TrendingUp,
+  ShieldAlert,
+  ArrowRight,
+  Eye,
+  MessageCircle,
+  MapPin,
+  Sparkles
+} from 'lucide-react'
 
 export default function HomePage() {
   const router = useRouter()
@@ -18,22 +30,22 @@ export default function HomePage() {
 
   const features = [
     {
-      icon: '🤖',
+      icon: <Sparkles className="w-8 h-8 text-purple-600" />,
       title: 'AI-Powered Insights',
       description: 'Ask any question about a property and get instant, detailed answers',
     },
     {
-      icon: '📊',
+      icon: <Database className="w-8 h-8 text-blue-600" />,
       title: 'Deep Data Analysis',
       description: '33 data sources analyzed including schools, crime, flood zones, and more',
     },
     {
-      icon: '💰',
+      icon: <TrendingUp className="w-8 h-8 text-green-600" />,
       title: 'Investment Analysis',
       description: 'Get ROI, cap rate, and cash flow projections for any property',
     },
     {
-      icon: '⚠️',
+      icon: <ShieldAlert className="w-8 h-8 text-red-600" />,
       title: 'Red Flag Detection',
       description: 'Automatically identify potential issues before you make an offer',
     },
@@ -67,8 +79,9 @@ export default function HomePage() {
         <div className="relative max-w-6xl mx-auto px-4 py-20 md:py-32">
           {/* Logo/Brand */}
           <div className="text-center mb-12">
-            <h1 className="text-5xl md:text-6xl font-bold mb-4">
-              🏠 HomeInsight AI
+            <h1 className="text-5xl md:text-6xl font-bold mb-4 flex items-center justify-center gap-3">
+              <Search className="w-12 h-12 md:w-16 md:h-16 text-blue-300" />
+              HomeInsight AI
             </h1>
             <p className="text-xl md:text-2xl text-blue-200 max-w-2xl mx-auto">
               The smartest way to find your next home. AI-powered insights on every property.
@@ -82,8 +95,8 @@ export default function HomePage() {
               <button
                 onClick={() => setSearchType('buy')}
                 className={`px-6 py-2 rounded-full font-semibold transition-all ${searchType === 'buy'
-                    ? 'bg-white text-blue-900'
-                    : 'bg-blue-800 text-white hover:bg-blue-700'
+                  ? 'bg-white text-blue-900'
+                  : 'bg-blue-800 text-white hover:bg-blue-700'
                   }`}
               >
                 Buy
@@ -91,8 +104,8 @@ export default function HomePage() {
               <button
                 onClick={() => setSearchType('rent')}
                 className={`px-6 py-2 rounded-full font-semibold transition-all ${searchType === 'rent'
-                    ? 'bg-white text-blue-900'
-                    : 'bg-blue-800 text-white hover:bg-blue-700'
+                  ? 'bg-white text-blue-900'
+                  : 'bg-blue-800 text-white hover:bg-blue-700'
                   }`}
               >
                 Rent
@@ -239,7 +252,10 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto px-4">
           <div className="grid md:grid-cols-4 gap-8 mb-8">
             <div>
-              <h3 className="text-white font-bold text-lg mb-4">🏠 HomeInsight AI</h3>
+              <h3 className="text-white font-bold text-lg mb-4 flex items-center gap-2">
+                <Search className="w-5 h-5 text-blue-400" />
+                HomeInsight AI
+              </h3>
               <p className="text-sm">
                 The smartest way to find your next home.
               </p>
