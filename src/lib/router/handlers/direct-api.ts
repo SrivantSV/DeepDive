@@ -1,10 +1,18 @@
 import { HandlerResult, PropertyContext } from '../types'
+import { shouldUsePerplexity } from '@/lib/utils/env'
 import * as google from '@/lib/api/google'
 import * as property from '@/lib/api/property'
 import * as neighborhood from '@/lib/api/neighborhood'
 import * as environmental from '@/lib/api/environmental'
 import * as financial from '@/lib/api/financial'
 import * as utilities from '@/lib/api/utilities'
+import {
+    getSchoolsViaPerplexity,
+    getCrimeDataViaPerplexity,
+    getCrimeIncidentsViaPerplexity,
+    getNoiseDataViaPerplexity,
+    getPropertyDataViaPerplexity,
+} from '@/lib/api/perplexity-replacements'
 
 interface ApiCall {
     api: string
@@ -101,6 +109,11 @@ async function executeApiCall(
         }
 
         case 'estated': {
+            // Check if we should use Perplexity replacement
+            if (shouldUsePerplexity('estated')) {
+                const result = await getPropertyDataViaPerplexity(context.address)
+                return { data: result.data, source: result.source as 'live' | 'mock' }
+            }
             const result = await property.getPropertyData(context.address)
             return { data: result.data, source: result.source }
         }
@@ -122,11 +135,21 @@ async function executeApiCall(
 
         // Neighborhood APIs
         case 'neighborhoodscout': {
+            // Check if we should use Perplexity replacement
+            if (shouldUsePerplexity('neighborhoodscout')) {
+                const result = await getCrimeDataViaPerplexity(context.address, context.city)
+                return { data: result.data, source: result.source as 'live' | 'mock' }
+            }
             const result = await neighborhood.getNeighborhoodData(context.address)
             return { data: result.data, source: result.source }
         }
 
         case 'greatschools': {
+            // Check if we should use Perplexity replacement
+            if (shouldUsePerplexity('greatschools')) {
+                const result = await getSchoolsViaPerplexity(context.lat, context.lng, context.city)
+                return { data: result.data, source: result.source as 'live' | 'mock' }
+            }
             const result = await neighborhood.getNearbySchools(context.lat, context.lng)
             return { data: result.data, source: result.source }
         }
@@ -137,6 +160,11 @@ async function executeApiCall(
         }
 
         case 'spotcrime': {
+            // Check if we should use Perplexity replacement
+            if (shouldUsePerplexity('spotcrime')) {
+                const result = await getCrimeIncidentsViaPerplexity(context.lat, context.lng, context.city)
+                return { data: result.data, source: result.source as 'live' | 'mock' }
+            }
             const result = await neighborhood.getCrimeIncidents(context.lat, context.lng)
             return { data: result.data, source: result.source }
         }
@@ -148,6 +176,11 @@ async function executeApiCall(
         }
 
         case 'howloud': {
+            // Check if we should use Perplexity replacement
+            if (shouldUsePerplexity('howloud')) {
+                const result = await getNoiseDataViaPerplexity(context.address, context.city)
+                return { data: result.data, source: result.source as 'live' | 'mock' }
+            }
             const result = await environmental.getNoiseScore(context.address)
             return { data: result.data, source: result.source }
         }

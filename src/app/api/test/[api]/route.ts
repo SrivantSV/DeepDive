@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { logApiStatus } from '@/lib/utils/env'
+import { logApiStatus, shouldUsePerplexity } from '@/lib/utils/env'
 
 // Import all API modules
 import * as google from '@/lib/api/google'
@@ -9,6 +9,13 @@ import * as environmental from '@/lib/api/environmental'
 import * as financial from '@/lib/api/financial'
 import * as utilities from '@/lib/api/utilities'
 import * as ai from '@/lib/api/ai'
+import {
+    getSchoolsViaPerplexity,
+    getCrimeDataViaPerplexity,
+    getCrimeIncidentsViaPerplexity,
+    getNoiseDataViaPerplexity,
+    getPropertyDataViaPerplexity,
+} from '@/lib/api/perplexity-replacements'
 
 // Log status on first load
 logApiStatus()
@@ -16,13 +23,14 @@ logApiStatus()
 const TEST_ADDRESS = '1148 Greenbrook Drive, Danville, CA 94526'
 const TEST_LAT = 37.8044
 const TEST_LNG = -121.9523
+const TEST_CITY = 'Danville'
 
 type TestResult = {
     api: string
-    status: 'success' | 'error' | 'mock'
+    status: 'success' | 'error' | 'mock' | 'perplexity'
     data?: unknown
     error?: string
-    source?: 'live' | 'mock'
+    source?: 'live' | 'mock' | 'perplexity'
     responseTime: number
 }
 
@@ -34,16 +42,17 @@ type ApiResponse = {
 
 async function runTest(
     name: string,
-    testFn: () => Promise<ApiResponse>
+    testFn: () => Promise<ApiResponse>,
+    perplexityReplacement: boolean = false
 ): Promise<TestResult> {
     const start = Date.now()
     try {
         const result = await testFn()
         return {
             api: name,
-            status: result.source === 'mock' ? 'mock' : 'success',
+            status: perplexityReplacement ? 'perplexity' : result.source === 'mock' ? 'mock' : 'success',
             data: result.data,
-            source: result.source,
+            source: perplexityReplacement ? 'perplexity' : result.source,
             responseTime: Date.now() - start,
         }
     } catch (error) {
@@ -90,9 +99,17 @@ export async function GET(
         'simplyrets': () => runTest('SimplyRETS', () =>
             property.searchListings({ cities: ['Danville'], limit: 5 })
         ),
-        'estated': () => runTest('Estated', () =>
-            property.getPropertyData(TEST_ADDRESS)
-        ),
+        'estated': () => {
+            if (shouldUsePerplexity('estated')) {
+                return runTest('Estated (via Perplexity)', () =>
+                    getPropertyDataViaPerplexity(TEST_ADDRESS) as Promise<ApiResponse>,
+                    true
+                )
+            }
+            return runTest('Estated', () =>
+                property.getPropertyData(TEST_ADDRESS)
+            )
+        },
         'rentcast': () => runTest('Rentcast', () =>
             property.getRentEstimate({ address: TEST_ADDRESS })
         ),
@@ -104,18 +121,42 @@ export async function GET(
         ),
 
         // Neighborhood APIs (5)
-        'neighborhoodscout': () => runTest('NeighborhoodScout', () =>
-            neighborhood.getNeighborhoodData(TEST_ADDRESS)
-        ),
-        'greatschools': () => runTest('GreatSchools', () =>
-            neighborhood.getNearbySchools(TEST_LAT, TEST_LNG)
-        ),
+        'neighborhoodscout': () => {
+            if (shouldUsePerplexity('neighborhoodscout')) {
+                return runTest('NeighborhoodScout (via Perplexity)', () =>
+                    getCrimeDataViaPerplexity(TEST_ADDRESS, TEST_CITY) as Promise<ApiResponse>,
+                    true
+                )
+            }
+            return runTest('NeighborhoodScout', () =>
+                neighborhood.getNeighborhoodData(TEST_ADDRESS)
+            )
+        },
+        'greatschools': () => {
+            if (shouldUsePerplexity('greatschools')) {
+                return runTest('GreatSchools (via Perplexity)', () =>
+                    getSchoolsViaPerplexity(TEST_LAT, TEST_LNG, TEST_CITY) as Promise<ApiResponse>,
+                    true
+                )
+            }
+            return runTest('GreatSchools', () =>
+                neighborhood.getNearbySchools(TEST_LAT, TEST_LNG)
+            )
+        },
         'census': () => runTest('Census', () =>
             neighborhood.getDemographicsByZip('94526')
         ),
-        'spotcrime': () => runTest('SpotCrime', () =>
-            neighborhood.getCrimeIncidents(TEST_LAT, TEST_LNG)
-        ),
+        'spotcrime': () => {
+            if (shouldUsePerplexity('spotcrime')) {
+                return runTest('SpotCrime (via Perplexity)', () =>
+                    getCrimeIncidentsViaPerplexity(TEST_LAT, TEST_LNG, TEST_CITY) as Promise<ApiResponse>,
+                    true
+                )
+            }
+            return runTest('SpotCrime', () =>
+                neighborhood.getCrimeIncidents(TEST_LAT, TEST_LNG)
+            )
+        },
         'fbi-ucr': () => runTest('FBI UCR', () =>
             neighborhood.getCrimeStatsByState('CA')
         ),
@@ -124,9 +165,17 @@ export async function GET(
         'fema': () => runTest('FEMA', () =>
             environmental.getFloodZone(TEST_LAT, TEST_LNG)
         ),
-        'howloud': () => runTest('HowLoud', () =>
-            environmental.getNoiseScore(TEST_ADDRESS)
-        ),
+        'howloud': () => {
+            if (shouldUsePerplexity('howloud')) {
+                return runTest('HowLoud (via Perplexity)', () =>
+                    getNoiseDataViaPerplexity(TEST_ADDRESS, TEST_CITY) as Promise<ApiResponse>,
+                    true
+                )
+            }
+            return runTest('HowLoud', () =>
+                environmental.getNoiseScore(TEST_ADDRESS)
+            )
+        },
         'airnow': () => runTest('AirNow', () =>
             environmental.getCurrentAQI(TEST_LAT, TEST_LNG)
         ),
@@ -180,10 +229,21 @@ export async function GET(
         'all': async () => {
             const allTests = Object.entries(tests).filter(([key]) => key !== 'all')
             const results = await Promise.all(allTests.map(([, testFn]) => testFn()))
+
+            // Summary
+            const summary = {
+                total: results.length,
+                live: results.filter(r => r.source === 'live').length,
+                mock: results.filter(r => r.source === 'mock').length,
+                perplexity: results.filter(r => r.source === 'perplexity').length,
+                errors: results.filter(r => r.status === 'error').length,
+            }
+
             return {
                 api: 'all',
                 status: 'success',
                 data: results,
+                summary,
                 responseTime: 0,
             } as TestResult
         },

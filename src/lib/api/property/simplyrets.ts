@@ -1,70 +1,42 @@
 import { createApiClient } from '@/lib/utils/api-client'
-import { env, shouldUseMock } from '@/lib/utils/env'
+import { env } from '@/lib/utils/env'
 import { mockSimplyRETS } from '@/lib/mock/property.mock'
+
+// SimplyRETS demo credentials (publicly documented)
+const DEMO_KEY = 'simplyrets'
+const DEMO_SECRET = 'simplyrets'
+
+// Use actual keys if provided, otherwise demo
+const apiKey = env.simplyrets.apiKey || DEMO_KEY
+const apiSecret = env.simplyrets.apiSecret || DEMO_SECRET
 
 const client = createApiClient({
     name: 'SimplyRETS',
     baseURL: 'https://api.simplyrets.com',
     headers: {
-        'Authorization': `Basic ${Buffer.from(`${env.simplyrets.apiKey}:${env.simplyrets.apiSecret}`).toString('base64')}`,
+        'Authorization': `Basic ${Buffer.from(`${apiKey}:${apiSecret}`).toString('base64')}`,
     },
 })
 
+// Use more flexible types to match both API and mock data
 export interface Listing {
     mlsId: number
     listPrice: number
     listDate: string
-    property: {
-        type: string
-        subType: string
-        bedrooms: number
-        bathsFull: number
-        bathsHalf: number
-        area: number // sqft
-        lotSize: string
-        yearBuilt: number
-        stories: number
-        garageSpaces: number
-        parking: { spaces: number; description: string }
-        pool: string
-        view: string
-        subdivision: string
-    }
-    address: {
-        streetNumber: string
-        streetName: string
-        streetSuffix: string
-        city: string
-        state: string
-        postalCode: string
-        full: string
-    }
-    geo: {
-        lat: number
-        lng: number
-    }
+    property: Record<string, unknown>
+    address: Record<string, unknown>
     photos: string[]
     remarks: string
-    agent: {
-        firstName: string
-        lastName: string
-        contact: { office: string; cell: string; email: string }
-    }
-    office: {
-        name: string
-        contact: { office: string }
-    }
-    mls: {
-        status: string
-        daysOnMarket: number
-        originalEntryTimestamp: string
-        lastModifiedTimestamp: string
-    }
+    geo: { lat: number; lng: number }
+    agent?: Record<string, unknown>
+    listingAgent?: Record<string, unknown>
+    office?: Record<string, unknown>
+    mls?: Record<string, unknown>
     virtualTourUrl?: string
 }
 
 export interface SearchParams {
-    q?: string // address search
+    q?: string
     cities?: string[]
     postalCodes?: string[]
     minPrice?: number
@@ -72,17 +44,14 @@ export interface SearchParams {
     minBeds?: number
     maxBeds?: number
     minBaths?: number
-    type?: string // "residential", "rental", "multifamily", "land"
-    status?: string // "Active", "Pending"
+    type?: 'residential' | 'rental' | 'multifamily' | 'land' | 'commercial'
+    status?: 'active' | 'pending' | 'closed'
     limit?: number
     offset?: number
 }
 
 export async function searchListings(params: SearchParams) {
-    if (shouldUseMock('simplyrets')) {
-        return { data: mockSimplyRETS.listings, error: null, source: 'mock' as const }
-    }
-
+    // Always try live API (demo or real credentials)
     const queryParams = new URLSearchParams()
     if (params.q) queryParams.append('q', params.q)
     if (params.cities) params.cities.forEach(c => queryParams.append('cities', c))
@@ -93,7 +62,7 @@ export async function searchListings(params: SearchParams) {
     if (params.minBaths) queryParams.append('minbaths', params.minBaths.toString())
     if (params.type) queryParams.append('type', params.type)
     if (params.status) queryParams.append('status', params.status)
-    if (params.limit) queryParams.append('limit', params.limit.toString())
+    queryParams.append('limit', (params.limit || 10).toString())
     if (params.offset) queryParams.append('offset', params.offset.toString())
 
     return client.request<Listing[]>(
@@ -104,13 +73,10 @@ export async function searchListings(params: SearchParams) {
 }
 
 export async function getListing(mlsId: number) {
-    if (shouldUseMock('simplyrets')) {
-        return { data: mockSimplyRETS.listing, error: null, source: 'mock' as const }
-    }
-
     return client.request<Listing>(
         `/properties/${mlsId}`,
         { method: 'GET' },
         mockSimplyRETS.listing
     )
 }
+
