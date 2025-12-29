@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { routeQuestion } from '@/lib/router'
+import { routeQuestion, routeQuestionStreaming } from '@/lib/router'
+
+export const runtime = 'nodejs'
+// export const dynamic = 'force-dynamic' // remove if causing build issues, but good for streaming
 
 export async function POST(request: NextRequest) {
     try {
@@ -19,11 +22,58 @@ export async function POST(request: NextRequest) {
 
         console.log(`[Chat API] Processing question: "${input.question}"`)
 
-        const response = await routeQuestion(input)
+        // Check if client wants streaming (checking via specific header or assumption)
+        // For now, we assume all POSTs to this endpoint want streaming if they can handle it.
+        // But to be safe and compatible with previous code, let's use the new streaming route.
 
-        console.log(`[Chat API] Response confidence: ${response.confidence}`)
+        const encoder = new TextEncoder()
 
-        return NextResponse.json(response)
+        const stream = new ReadableStream({
+            async start(controller) {
+                try {
+                    // Stream callback
+                    const onChunk = (chunk: string) => {
+                        const data = JSON.stringify({ type: 'chunk', content: chunk })
+                        controller.enqueue(encoder.encode(`data: ${data}\n\n`))
+                    }
+
+                    const onMetadata = (metadata: any) => {
+                        const data = JSON.stringify({ type: 'metadata', ...metadata })
+                        controller.enqueue(encoder.encode(`data: ${data}\n\n`))
+                    }
+
+                    // Run the router with streaming
+                    const result = await routeQuestionStreaming(
+                        input,
+                        onChunk,
+                        onMetadata
+                    )
+
+                    // Send final result
+                    const finalData = JSON.stringify({ type: 'done', ...result })
+                    controller.enqueue(encoder.encode(`data: ${finalData}\n\n`))
+
+                } catch (error) {
+                    console.error('[Chat API] Streaming Error:', error)
+                    const errorData = JSON.stringify({
+                        type: 'error',
+                        error: error instanceof Error ? error.message : 'Unknown error'
+                    })
+                    controller.enqueue(encoder.encode(`data: ${errorData}\n\n`))
+                } finally {
+                    controller.close()
+                }
+            },
+        })
+
+        return new Response(stream, {
+            headers: {
+                'Content-Type': 'text/event-stream',
+                'Cache-Control': 'no-cache',
+                'Connection': 'keep-alive',
+            },
+        })
+
     } catch (error) {
         console.error('[Chat API] Error:', error)
         return NextResponse.json(
@@ -38,7 +88,7 @@ export async function POST(request: NextRequest) {
     }
 }
 
-// Also support GET for simple testing
+// Keep non-streaming endpoint for simple testing via Browser GET
 export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams
     const question = searchParams.get('q')

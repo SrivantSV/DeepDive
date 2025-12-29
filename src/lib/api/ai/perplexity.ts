@@ -183,3 +183,101 @@ export async function batchQueries(
         error: result.status === 'rejected' ? result.reason : null,
     }))
 }
+
+// STREAMING query
+export async function queryPerplexityStreaming(
+    query: string,
+    systemPrompt: string | undefined,
+    onChunk: (chunk: string) => void
+): Promise<{ content: string; citations: string[]; source: 'live' | 'mock' }> {
+
+    if (shouldUseMock('perplexity')) {
+        // Simulate streaming for mock
+        const mockContent = mockPerplexity.response.choices[0].message.content
+        const words = mockContent.split(' ')
+        for (const word of words) {
+            onChunk(word + ' ')
+            await new Promise(r => setTimeout(r, 20))
+        }
+        return { content: mockContent, citations: [], source: 'mock' }
+    }
+
+    try {
+        const messages: PerplexityMessage[] = []
+        if (systemPrompt) {
+            messages.push({ role: 'system', content: systemPrompt })
+        }
+        messages.push({ role: 'user', content: query })
+
+        const response = await fetch('https://api.perplexity.ai/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${env.perplexity.apiKey}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                model: 'llama-3.1-sonar-small-128k-online',
+                messages,
+                temperature: 0.2,
+                max_tokens: 2000,
+                return_citations: true,
+                search_recency_filter: 'month',
+                stream: true,
+            }),
+        })
+
+        if (!response.ok) {
+            throw new Error(`Perplexity API error: ${response.status}`)
+        }
+
+        const reader = response.body?.getReader()
+        if (!reader) throw new Error('No response body')
+
+        const decoder = new TextDecoder()
+        let fullContent = ''
+        let citations: string[] = []
+
+        while (true) {
+            const { done, value } = await reader.read()
+            if (done) break
+
+            const chunk = decoder.decode(value, { stream: true })
+            const lines = chunk.split('\n')
+
+            for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                    const data = line.slice(6)
+                    if (data === '[DONE]') continue
+
+                    try {
+                        const parsed = JSON.parse(data)
+
+                        // Extract content delta
+                        const delta = parsed.choices?.[0]?.delta?.content
+                        if (delta) {
+                            fullContent += delta
+                            onChunk(delta)
+                        }
+
+                        // Extract citations if present
+                        if (parsed.citations) {
+                            citations = parsed.citations
+                        }
+                    } catch (e) {
+                        // Skip unparseable lines
+                    }
+                }
+            }
+        }
+
+        return { content: fullContent, citations, source: 'live' }
+    } catch (error) {
+        console.error('[Perplexity Streaming] Error:', error)
+
+        // Fallback to non-streaming
+        const fallback = await queryPerplexity(query, systemPrompt)
+        const content = fallback.data?.choices?.[0]?.message?.content || ''
+        onChunk(content)
+        return { content, citations: fallback.data?.citations || [], source: 'mock' }
+    }
+}

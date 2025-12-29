@@ -22,7 +22,349 @@ import {
 } from './types'
 
 // Add queryPerplexity import for handler usage
-import { queryPerplexity } from '@/lib/api/ai/perplexity'
+import { queryPerplexity, queryPerplexityStreaming } from '@/lib/api/ai/perplexity'
+
+// Add this new function for streaming
+export async function routeQuestionStreaming(
+    input: {
+        question: string
+        propertyContext?: Partial<PropertyContext>
+    },
+    onChunk: (chunk: string) => void,
+    onMetadata: (metadata: any) => void
+): Promise<RouterResponse> {
+    const startTime = Date.now()
+
+    // Default property context
+    const context: PropertyContext = {
+        address: input.propertyContext?.address || '350 Alamo Square Dr, Danville, CA 94526',
+        lat: input.propertyContext?.lat || 37.8207,
+        lng: input.propertyContext?.lng || -121.9706,
+        zipCode: input.propertyContext?.zipCode || '94526',
+        city: input.propertyContext?.city || 'Danville',
+        state: input.propertyContext?.state || 'CA',
+        price: input.propertyContext?.price,
+        bedrooms: input.propertyContext?.bedrooms,
+        bathrooms: input.propertyContext?.bathrooms,
+        sqft: input.propertyContext?.sqft,
+        yearBuilt: input.propertyContext?.yearBuilt,
+    }
+
+    const question = input.question.trim()
+    const category = classifyQuestion(question)
+
+    // Send initial metadata
+    onMetadata({
+        category,
+        status: 'analyzing',
+        message: `Analyzing your question about ${context.address}...`
+    })
+
+    // Build the query based on category
+    const { query, systemPrompt } = buildQueryForCategory(category, question, context)
+
+    // Send status update
+    onMetadata({ status: 'searching', message: 'Searching real estate databases...' })
+
+    // Stream the response
+    const result = await queryPerplexityStreaming(query, systemPrompt, onChunk)
+
+    // Send final metadata
+    onMetadata({
+        status: 'complete',
+        sources: result.citations,
+        responseTime: Date.now() - startTime,
+    })
+
+    return {
+        answer: result.content,
+        confidence: result.citations.length > 2 ? 'high' : 'medium',
+        sources: result.citations,
+        followUpSuggestions: getFollowUpSuggestions(category),
+        responseTime: Date.now() - startTime,
+        category,
+        validated: true,
+    }
+}
+
+function buildQueryForCategory(
+    category: string,
+    question: string,
+    context: PropertyContext
+): { query: string; systemPrompt: string } {
+
+    const propertyInfo = `
+Property: ${context.address}
+${context.price ? `List Price: $${context.price.toLocaleString()}` : ''}
+${context.bedrooms ? `Bedrooms: ${context.bedrooms}` : ''}
+${context.bathrooms ? `Bathrooms: ${context.bathrooms}` : ''}
+${context.sqft ? `Square Feet: ${context.sqft.toLocaleString()}` : ''}
+${context.yearBuilt ? `Year Built: ${context.yearBuilt}` : ''}
+City: ${context.city}, ${context.state} ${context.zipCode}
+  `.trim()
+
+    const baseSystemPrompt = `You are HomeInsight AI, an expert real estate analyst. Provide detailed, accurate answers with specific numbers and facts.
+
+Format your response with clear sections using markdown:
+- Use ## for main headers
+- Use **bold** for important values
+- Use bullet points for lists
+- Include specific dollar amounts, percentages, and dates
+- Be concise but thorough
+
+Property Context:
+${propertyInfo}`
+
+    switch (category) {
+        case 'financial_value':
+            return {
+                query: `Is ${context.address} overpriced at ${context.price ? `$${context.price.toLocaleString()}` : 'its current price'}?
+
+Find:
+1. Zillow Zestimate
+2. Redfin Estimate  
+3. Recent comparable sales
+4. Price per square foot vs area average
+
+Give a clear verdict: OVERPRICED, FAIRLY PRICED, or GOOD VALUE.
+Suggest a fair offer price.`,
+                systemPrompt: baseSystemPrompt + `
+
+Structure your response:
+## Valuation Analysis
+
+### Estimated Value
+[Zestimate, Redfin estimate, your assessment]
+
+### Verdict: [OVERPRICED/FAIRLY PRICED/GOOD VALUE]
+[Explanation with specific numbers]
+
+### Suggested Offer
+$[amount] - [reasoning]
+
+### Comparable Sales
+[List 2-3 recent sales]`,
+            }
+
+        case 'financial_investment':
+            return {
+                query: `What is the investment potential of ${context.address}?
+${context.price ? `Price: $${context.price.toLocaleString()}` : ''}
+
+Find:
+1. Estimated monthly rent (Zillow Rent Zestimate)
+2. Cap rate calculation
+3. Cash flow analysis
+4. Rental market trends
+5. Comparable rentals`,
+                systemPrompt: baseSystemPrompt + `
+
+Structure your response:
+## Investment Analysis
+
+### Rental Income Potential
+- **Estimated Rent:** $X/month
+- **Annual Gross:** $X
+
+### Key Metrics
+- **Cap Rate:** X%
+- **Cash-on-Cash:** X% 
+- **Monthly Cash Flow:** $X
+
+### Market Context
+[Rental trends, vacancy rates]
+
+### Verdict
+[STRONG/MODERATE/WEAK investment with explanation]`,
+            }
+
+        case 'red_flags':
+        case 'environmental_risk':
+            return {
+                query: `What are the potential red flags or risks for ${context.address}?
+
+Check:
+1. Flood zone (FEMA)
+2. Wildfire risk
+3. Earthquake/seismic risk
+4. Crime statistics
+5. Noise levels
+6. Environmental hazards
+7. HOA issues
+8. Permit problems`,
+                systemPrompt: baseSystemPrompt + `
+
+Structure your response:
+## Red Flags Assessment
+
+### Natural Hazards
+- **Flood Risk:** [Zone X/A/etc] - [explanation]
+- **Wildfire Risk:** [Low/Moderate/High]
+- **Earthquake Risk:** [assessment]
+
+### Safety & Community
+- **Crime:** [Grade A-F, specific stats]
+- **Noise:** [assessment]
+
+### Property Issues
+[Any liens, permits, HOA issues]
+
+### Overall Assessment
+[Summary with recommendation]`,
+            }
+
+        case 'schools':
+            return {
+                query: `What are the schools near ${context.address}? Include ratings and distances.`,
+                systemPrompt: baseSystemPrompt + `
+
+Structure your response:
+## Schools Near ${context.address}
+
+### Elementary Schools
+- **[School Name]** - Rating: X/10 - Distance: X mi
+  [Brief description]
+
+### Middle Schools
+- **[School Name]** - Rating: X/10 - Distance: X mi
+
+### High Schools
+- **[School Name]** - Rating: X/10 - Distance: X mi
+
+### School District
+[Overall district quality and notes]`,
+            }
+
+        case 'neighborhood_safety':
+            return {
+                query: `How safe is the neighborhood around ${context.address}? Include crime statistics.`,
+                systemPrompt: baseSystemPrompt + `
+
+Structure your response:
+## Safety Analysis
+
+### Crime Statistics
+- **Overall Grade:** [A-F]
+- **Violent Crime:** X per 1,000 (vs national avg)
+- **Property Crime:** X per 1,000
+
+### Compared to Area
+[How it compares to nearby cities]
+
+### Recent Trends
+[Is crime increasing or decreasing?]
+
+### Safety Tips
+[Any specific considerations]`,
+            }
+
+        case 'neighborhood_vibe':
+        case 'neighborhood_demographics':
+            return {
+                query: `What is it like to live in ${context.city} near ${context.address}? What do residents say?`,
+                systemPrompt: baseSystemPrompt + `
+
+Structure your response:
+## Neighborhood Guide: ${context.city}
+
+### The Vibe
+[2-3 sentence description of neighborhood character]
+
+### What Residents Love
+- [Point 1]
+- [Point 2]
+- [Point 3]
+
+### Common Complaints
+- [Point 1]
+- [Point 2]
+
+### Demographics
+- Median Age: X
+- Median Income: $X
+- Education Level: X%
+
+### Best For
+[Who would love this neighborhood?]`,
+            }
+
+        case 'location_commute':
+            return {
+                query: `What is the commute from ${context.address} to San Francisco and other Bay Area locations?`,
+                systemPrompt: baseSystemPrompt + `
+
+Structure your response:
+## Commute Analysis
+
+### To San Francisco
+- **Without Traffic:** X minutes
+- **Rush Hour (8am):** X minutes
+- **Route:** [Best route]
+
+### To San Jose
+- **Without Traffic:** X minutes
+- **Rush Hour:** X minutes
+
+### Public Transit
+- **BART Access:** [Nearest station, travel time]
+- **Bus:** [Options]
+
+### Work From Home
+[Local trends and co-working spaces]`,
+            }
+
+        default:
+            return {
+                query: `${question}
+
+Property: ${context.address}, ${context.city}, ${context.state} ${context.zipCode}`,
+                systemPrompt: baseSystemPrompt + `
+
+Provide a helpful, specific answer to the user's question about this property. Use clear formatting with headers and bullet points.`,
+            }
+    }
+}
+
+function getFollowUpSuggestions(category: string): string[] {
+    const suggestions: Record<string, string[]> = {
+        financial_value: [
+            'Is this a good investment?',
+            'What would my monthly payment be?',
+            'Show me comparable sales',
+        ],
+        financial_investment: [
+            'Is this property overpriced?',
+            'What about Airbnb income?',
+            'What are the tax benefits?',
+        ],
+        red_flags: [
+            'How safe is this neighborhood?',
+            'What about the schools?',
+            'Is there earthquake insurance needed?',
+        ],
+        schools: [
+            'Is this neighborhood safe?',
+            'What do residents say about the area?',
+            'What is the commute like?',
+        ],
+        neighborhood_safety: [
+            'How are the schools?',
+            'What do neighbors say?',
+            'Any red flags to know about?',
+        ],
+        neighborhood_vibe: [
+            'Is this area safe?',
+            'How are the schools?',
+            'What is the commute to SF?',
+        ],
+    }
+
+    return suggestions[category] || [
+        'Is this property overpriced?',
+        'Any red flags?',
+        'How are the schools?',
+    ]
+}
 
 export async function routeQuestion(input: {
     question: string

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
+import ReactMarkdown from 'react-markdown'
 import {
     ArrowLeft,
     Share2,
@@ -63,8 +64,51 @@ interface Listing {
 interface Message {
     role: 'user' | 'assistant'
     content: string
+    isStreaming?: boolean
     sources?: string[]
     confidence?: string
+    responseTime?: number
+}
+
+// Markdown rendering component
+function MarkdownRenderer({ content }: { content: string }) {
+    return (
+        <ReactMarkdown
+            components={{
+                h2: ({ children }) => (
+                    <h2 className="text-lg font-bold mt-4 mb-2 text-gray-900">{children}</h2>
+                ),
+                h3: ({ children }) => (
+                    <h3 className="text-md font-semibold mt-3 mb-1 text-gray-800">{children}</h3>
+                ),
+                h4: ({ children }) => (
+                    <h4 className="text-sm font-semibold mt-2 mb-1 text-gray-700">{children}</h4>
+                ),
+                p: ({ children }) => (
+                    <p className="my-2 text-gray-700 leading-relaxed">{children}</p>
+                ),
+                ul: ({ children }) => (
+                    <ul className="my-2 space-y-1">{children}</ul>
+                ),
+                li: ({ children }) => (
+                    <li className="flex items-start gap-2 text-gray-700">
+                        <span className="text-blue-500 mt-1">•</span>
+                        <span>{children}</span>
+                    </li>
+                ),
+                strong: ({ children }) => (
+                    <strong className="font-semibold text-gray-900">{children}</strong>
+                ),
+                a: ({ href, children }) => (
+                    <a href={href} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                        {children}
+                    </a>
+                ),
+            }}
+        >
+            {content}
+        </ReactMarkdown>
+    )
 }
 
 export default function PropertyPage() {
@@ -102,12 +146,20 @@ export default function PropertyPage() {
     }
 
     const sendMessage = async (question: string) => {
-        if (!question.trim() || !listing) return
+        if (!question.trim() || !listing || chatLoading) return
 
         const userMessage: Message = { role: 'user', content: question }
         setMessages(prev => [...prev, userMessage])
         setInput('')
         setChatLoading(true)
+
+        // Add empty assistant message for streaming
+        const assistantMessage: Message = {
+            role: 'assistant',
+            content: '',
+            isStreaming: true
+        }
+        setMessages(prev => [...prev, assistantMessage])
 
         try {
             const response = await fetch('/api/chat', {
@@ -131,21 +183,81 @@ export default function PropertyPage() {
                 }),
             })
 
-            const data = await response.json()
+            const reader = response.body?.getReader()
+            if (!reader) throw new Error('No response body')
 
-            const assistantMessage: Message = {
-                role: 'assistant',
-                content: data.answer || data.error || 'Sorry, I could not process that question.',
-                sources: data.sources,
-                confidence: data.confidence,
+            const decoder = new TextDecoder()
+            let fullContent = ''
+            let metadata: any = {}
+
+            while (true) {
+                const { done, value } = await reader.read()
+                if (done) break
+
+                const chunk = decoder.decode(value, { stream: true })
+                const lines = chunk.split('\n')
+
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        try {
+                            const data = JSON.parse(line.slice(6))
+
+                            if (data.type === 'chunk') {
+                                fullContent += data.content
+                                // Update the streaming message
+                                setMessages(prev => {
+                                    const newMessages = [...prev]
+                                    const lastIdx = newMessages.length - 1
+                                    if (newMessages[lastIdx]?.role === 'assistant') {
+                                        newMessages[lastIdx] = {
+                                            ...newMessages[lastIdx],
+                                            content: fullContent,
+                                        }
+                                    }
+                                    return newMessages
+                                })
+                            } else if (data.type === 'metadata') {
+                                metadata = { ...metadata, ...data }
+                            } else if (data.type === 'done') {
+                                metadata = { ...metadata, ...data }
+                            }
+                        } catch (e) {
+                            // Skip unparseable lines
+                        }
+                    }
+                }
             }
 
-            setMessages(prev => [...prev, assistantMessage])
+            // Finalize the message
+            setMessages(prev => {
+                const newMessages = [...prev]
+                const lastIdx = newMessages.length - 1
+                if (newMessages[lastIdx]?.role === 'assistant') {
+                    newMessages[lastIdx] = {
+                        role: 'assistant',
+                        content: fullContent,
+                        isStreaming: false,
+                        sources: metadata.sources,
+                        confidence: metadata.confidence,
+                        responseTime: metadata.responseTime,
+                    }
+                }
+                return newMessages
+            })
+
         } catch (error) {
-            setMessages(prev => [...prev, {
-                role: 'assistant',
-                content: 'Sorry, something went wrong. Please try again.',
-            }])
+            setMessages(prev => {
+                const newMessages = [...prev]
+                const lastIdx = newMessages.length - 1
+                if (newMessages[lastIdx]?.role === 'assistant') {
+                    newMessages[lastIdx] = {
+                        role: 'assistant',
+                        content: 'Sorry, something went wrong. Please try again.',
+                        isStreaming: false,
+                    }
+                }
+                return newMessages
+            })
         } finally {
             setChatLoading(false)
         }
@@ -413,13 +525,11 @@ export default function PropertyPage() {
                             )}
 
                             {/* Messages */}
-                            <div className="h-80 overflow-y-auto p-4 space-y-4">
+                            <div className="h-96 overflow-y-auto p-4 space-y-4">
                                 {messages.length === 0 ? (
-                                    <div className="text-center text-gray-400 py-8">
-                                        <div className="flex justify-center mb-2">
-                                            <MessageCircle className="w-12 h-12 text-blue-200" />
-                                        </div>
-                                        <div>Ask me anything about this property!</div>
+                                    <div className="text-center text-gray-500 py-8">
+                                        <div className="text-4xl mb-2">💬</div>
+                                        <p>Ask me anything about this property!</p>
                                     </div>
                                 ) : (
                                     messages.map((msg, i) => (
@@ -428,32 +538,50 @@ export default function PropertyPage() {
                                             className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                                         >
                                             <div
-                                                className={`max-w-[85%] rounded-lg p-3 ${msg.role === 'user'
-                                                    ? 'bg-blue-600 text-white'
-                                                    : 'bg-gray-100 text-gray-800'
+                                                className={`max-w-[90%] rounded-xl p-4 ${msg.role === 'user'
+                                                        ? 'bg-blue-600 text-white'
+                                                        : 'bg-gray-50 border border-gray-200'
                                                     }`}
                                             >
-                                                <div className="whitespace-pre-wrap text-sm">{msg.content}</div>
-                                                {msg.sources && msg.sources.length > 0 && (
-                                                    <div className="text-xs mt-2 opacity-70">
-                                                        Sources: {msg.sources.join(', ')}
+                                                {msg.role === 'user' ? (
+                                                    <div className="text-sm">{msg.content}</div>
+                                                ) : (
+                                                    <div className="text-sm">
+                                                        <MarkdownRenderer content={msg.content} />
+
+                                                        {/* Streaming indicator */}
+                                                        {msg.isStreaming && (
+                                                            <span className="inline-block w-2 h-4 bg-blue-500 animate-pulse ml-1" />
+                                                        )}
+
+                                                        {/* Metadata footer */}
+                                                        {!msg.isStreaming && (msg.sources?.length || msg.responseTime) && (
+                                                            <div className="mt-3 pt-3 border-t border-gray-200 flex flex-wrap gap-2 text-xs">
+                                                                {msg.confidence && (
+                                                                    <span className={`px-2 py-1 rounded-full ${msg.confidence === 'high' ? 'bg-green-100 text-green-700' :
+                                                                            msg.confidence === 'medium' ? 'bg-yellow-100 text-yellow-700' :
+                                                                                'bg-gray-100 text-gray-700'
+                                                                        }`}>
+                                                                        {msg.confidence} confidence
+                                                                    </span>
+                                                                )}
+                                                                {msg.responseTime && (
+                                                                    <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-full">
+                                                                        {(msg.responseTime / 1000).toFixed(1)}s
+                                                                    </span>
+                                                                )}
+                                                                {msg.sources && msg.sources.length > 0 && (
+                                                                    <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full">
+                                                                        {msg.sources.length} sources
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 )}
                                             </div>
                                         </div>
                                     ))
-                                )}
-
-                                {chatLoading && (
-                                    <div className="flex justify-start">
-                                        <div className="bg-gray-100 rounded-lg p-3">
-                                            <div className="flex gap-1">
-                                                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                                                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                                                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                                            </div>
-                                        </div>
-                                    </div>
                                 )}
 
                                 <div ref={messagesEndRef} />
