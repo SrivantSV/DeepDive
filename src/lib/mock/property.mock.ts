@@ -31,9 +31,9 @@ export const mockSimplyRETS = {
             },
             geo: { lat: 37.8044, lng: -121.9523 },
             photos: [
-                'https://example.com/photo1.jpg',
-                'https://example.com/photo2.jpg',
-                'https://example.com/photo3.jpg',
+                'https://d2bd5h5te3s67r.cloudfront.net/photo1.jpg',
+                'https://d2bd5h5te3s67r.cloudfront.net/photo2.jpg',
+                'https://d2bd5h5te3s67r.cloudfront.net/photo3.jpg',
             ],
             remarks: 'Beautiful single-family home in desirable Greenbrook Estates. Features include updated kitchen with granite countertops, hardwood floors, and spacious backyard.',
             agent: {
@@ -84,8 +84,8 @@ export const mockSimplyRETS = {
         },
         geo: { lat: 37.8044, lng: -121.9523 },
         photos: [
-            'https://example.com/photo1.jpg',
-            'https://example.com/photo2.jpg',
+            'https://d2bd5h5te3s67r.cloudfront.net/photo1.jpg',
+            'https://d2bd5h5te3s67r.cloudfront.net/photo2.jpg',
         ],
         remarks: 'Beautiful single-family home in desirable Greenbrook Estates.',
         agent: {
