@@ -120,6 +120,8 @@ export const QUESTION_PATTERNS: Record<QuestionCategory, RegExp[]> = {
         /closest/i,
         /miles to/i,
         /minutes to/i,
+        /how long.*(drive|walk|bike)/i,
+        /get to\b/i,
     ],
     location_amenities: [
         /what.*(nearby|around|close)/i,
@@ -128,13 +130,18 @@ export const QUESTION_PATTERNS: Record<QuestionCategory, RegExp[]> = {
         /shopping/i,
         /parks near/i,
         /things to do/i,
+        /what's around/i,
+        /amenities/i,
+        /coffee/i,
+        /gym/i,
+        /pharmacy/i,
     ],
     location_commute: [
         /commute/i,
         /rush hour/i,
         /traffic/i,
         /drive to work/i,
-        /get to (downtown|sf|work|office)/i,
+        /get to.*(downtown|sf|work|office|city)/i,
     ],
     financial_value: [
         /overpriced/i,
@@ -143,6 +150,7 @@ export const QUESTION_PATTERNS: Record<QuestionCategory, RegExp[]> = {
         /fair price/i,
         /value/i,
         /good deal/i,
+        /asking too much/i,
     ],
     financial_investment: [
         /good investment/i,
@@ -151,6 +159,8 @@ export const QUESTION_PATTERNS: Record<QuestionCategory, RegExp[]> = {
         /cash flow/i,
         /rental income/i,
         /airbnb/i,
+        /return on/i,
+        /invest/i,
     ],
     financial_cost: [
         /monthly cost/i,
@@ -158,12 +168,14 @@ export const QUESTION_PATTERNS: Record<QuestionCategory, RegExp[]> = {
         /total cost/i,
         /afford/i,
         /payment/i,
+        /how much.*(month|cost)/i,
     ],
     financial_mortgage: [
         /mortgage rate/i,
         /interest rate/i,
         /loan/i,
         /financing/i,
+        /current rate/i,
     ],
     environmental_risk: [
         /flood/i,
@@ -172,6 +184,7 @@ export const QUESTION_PATTERNS: Record<QuestionCategory, RegExp[]> = {
         /fire risk/i,
         /natural disaster/i,
         /hazard/i,
+        /risk/i,
     ],
     environmental_quality: [
         /air quality/i,
@@ -180,6 +193,7 @@ export const QUESTION_PATTERNS: Record<QuestionCategory, RegExp[]> = {
         /quiet/i,
         /loud/i,
         /pollen/i,
+        /allergi/i,
     ],
     neighborhood_safety: [
         /safe/i,
@@ -187,6 +201,7 @@ export const QUESTION_PATTERNS: Record<QuestionCategory, RegExp[]> = {
         /dangerous/i,
         /security/i,
         /sex offender/i,
+        /violent/i,
     ],
     neighborhood_vibe: [
         /what.*(like|living)/i,
@@ -194,6 +209,9 @@ export const QUESTION_PATTERNS: Record<QuestionCategory, RegExp[]> = {
         /neighbors/i,
         /community/i,
         /vibe/i,
+        /character/i,
+        /what do.*(people|residents|neighbors).*(say|think)/i,
+        /sentiment/i,
     ],
     neighborhood_demographics: [
         /who lives/i,
@@ -201,6 +219,17 @@ export const QUESTION_PATTERNS: Record<QuestionCategory, RegExp[]> = {
         /median income/i,
         /population/i,
         /families/i,
+        /average age/i,
+        /median age/i,
+        /how old.*(people|residents)/i,
+        /income level/i,
+        /wealthy/i,
+        /affluent/i,
+        /education level/i,
+        /growing area/i,
+        /population growth/i,
+        /is it growing/i,
+        /household/i,
     ],
     schools: [
         /school/i,
@@ -208,6 +237,9 @@ export const QUESTION_PATTERNS: Record<QuestionCategory, RegExp[]> = {
         /district/i,
         /elementary/i,
         /high school/i,
+        /middle school/i,
+        /kids/i,
+        /children/i,
     ],
     property_features: [
         /does it have/i,
@@ -216,6 +248,11 @@ export const QUESTION_PATTERNS: Record<QuestionCategory, RegExp[]> = {
         /backyard/i,
         /bedrooms/i,
         /bathrooms/i,
+        /sqft/i,
+        /square feet/i,
+        /lot size/i,
+        /how big/i,
+        /how many.*(bed|bath|room)/i,
     ],
     property_condition: [
         /condition/i,
@@ -223,12 +260,17 @@ export const QUESTION_PATTERNS: Record<QuestionCategory, RegExp[]> = {
         /renovated/i,
         /new kitchen/i,
         /roof age/i,
+        /how old.*(house|home|property|roof|hvac)/i,
+        /year built/i,
+        /when.*(built|constructed)/i,
     ],
     property_history: [
         /permit/i,
         /renovation history/i,
         /previous owner/i,
         /sold before/i,
+        /sales history/i,
+        /price history/i,
     ],
     property_legal: [
         /zoning/i,
@@ -236,6 +278,7 @@ export const QUESTION_PATTERNS: Record<QuestionCategory, RegExp[]> = {
         /what can i build/i,
         /legal/i,
         /restrictions/i,
+        /hoa/i,
     ],
     utilities: [
         /internet/i,
@@ -244,6 +287,8 @@ export const QUESTION_PATTERNS: Record<QuestionCategory, RegExp[]> = {
         /utilities/i,
         /electric/i,
         /solar/i,
+        /broadband/i,
+        /speed/i,
     ],
     comparison: [
         /compare/i,
@@ -259,6 +304,7 @@ export const QUESTION_PATTERNS: Record<QuestionCategory, RegExp[]> = {
         /problem/i,
         /issue/i,
         /wrong with/i,
+        /any.*(problem|issue|concern)/i,
     ],
     general: [],
 }

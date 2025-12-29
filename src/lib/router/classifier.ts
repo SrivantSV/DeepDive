@@ -8,11 +8,15 @@ export function classifyQuestion(question: string): QuestionCategory {
     for (const [category, patterns] of Object.entries(QUESTION_PATTERNS)) {
         for (const pattern of patterns) {
             if (pattern.test(lowerQuestion)) {
+                console.log(`[Classifier] Matched "${question}" to category: ${category}`)
                 return category as QuestionCategory
             }
         }
     }
 
+    console.log(`[Classifier] No pattern match for "${question}", classifying as general`)
+
+    // For general questions, we'll still route to Perplexity handler
     return 'general'
 }
 
@@ -55,7 +59,7 @@ export function determineApis(
         utilities: ['broadband', 'google_solar'],
         comparison: ['simplyrets', 'estated'],
         red_flags: ['fema', 'neighborhoodscout', 'perplexity', 'wildfire', 'usgs'],
-        general: [],
+        general: ['perplexity'], // Use Perplexity for unclassified questions
     }
 
     // Add defaults if no specific APIs found
@@ -81,6 +85,7 @@ export function needsPerplexity(category: QuestionCategory, question: string): b
     const perplexityCategories: QuestionCategory[] = [
         'neighborhood_vibe',
         'property_history',
+        'general', // Also use Perplexity for unclassified questions
     ]
 
     const perplexityKeywords = [

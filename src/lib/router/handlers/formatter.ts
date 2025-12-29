@@ -300,15 +300,51 @@ function formatAnswer(
         }
 
         case 'neighborhood_demographics': {
-            const census = data.census as { population?: number; medianIncome?: number; medianAge?: number } | undefined
+            // Try multiple paths to find the data - cast to any for flexible access
+            const dataAny = data as Record<string, unknown>
+            const censusData = dataAny?.census as Record<string, unknown> | undefined
+            const demo = (censusData?.demographics || censusData || dataAny?.demographics || dataAny || {}) as Record<string, unknown>
 
-            if (census) {
-                return `**Demographics:**\n\n` +
-                    `• Population: ${census.population?.toLocaleString()}\n` +
-                    `• Median Income: $${census.medianIncome?.toLocaleString()}\n` +
-                    `• Median Age: ${census.medianAge} years`
+            console.log(`[Formatter] Demographics data:`, demo)
+
+            // Check if we have any actual data
+            const hasData = demo.total_population || demo.median_household_income ||
+                demo.median_age || demo.population || demo.median_income
+
+            if (!hasData) {
+                return `I'm retrieving demographics for ${context.city}. Please try again in a moment.`
             }
-            return "Let me look up the demographics for this area..."
+
+            // Helper function to format numbers with fallback
+            const formatNum = (val: unknown): string => {
+                if (val === null || val === undefined) return 'N/A'
+                const num = Number(val)
+                if (isNaN(num)) return String(val)
+                return num.toLocaleString()
+            }
+
+            return `**Demographics for ${context.city}, ${context.zipCode}:**
+
+**Population & Households**
+• Total Population: ${formatNum(demo.total_population || demo.population)}
+• Median Age: ${demo.median_age || 'N/A'} years
+• Average Household Size: ${demo.average_household_size || 'N/A'}
+
+**Income & Economy**
+• Median Household Income: $${formatNum(demo.median_household_income || demo.median_income)}
+• Poverty Rate: ${demo.poverty_rate || 'N/A'}%
+• Unemployment Rate: ${demo.unemployment_rate || 'N/A'}%
+
+**Housing**
+• Median Home Value: $${formatNum(demo.median_home_value)}
+• Median Rent: $${formatNum(demo.median_rent)}
+• Owner-Occupied: ${demo.owner_occupied_percent || 'N/A'}%
+
+**Education**
+• Bachelor's Degree or Higher: ${demo.education_bachelors_or_higher || 'N/A'}%
+
+**Commute**
+• Average Commute Time: ${demo.commute_time_average || 'N/A'} minutes`
         }
 
         case 'property_features':

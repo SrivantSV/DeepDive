@@ -156,8 +156,16 @@ async function executeApiCall(
         }
 
         case 'census': {
+            console.log(`[DirectAPI] Calling Census for ${context.zipCode}`)
             const result = await neighborhood.getDemographicsByZip(context.zipCode)
-            return { data: result.data, source: result.source }
+            console.log(`[DirectAPI] Census result:`, result.data)
+            return {
+                data: {
+                    census: result.data,
+                    demographics: result.data
+                },
+                source: result.source
+            }
         }
 
         case 'spotcrime': {
