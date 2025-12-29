@@ -79,6 +79,38 @@ function formatAnswer(
             return "I need more data to complete the investment analysis."
         }
 
+        case 'financial_value': {
+            const verdict = data.verdict as string | undefined
+            const listPrice = data.listPrice as number | undefined
+            const estimatedValue = data.estimatedValue as number | undefined
+            const valueRange = data.valueRange as { low?: number; high?: number } | undefined
+            const difference = data.difference as { amount?: number; percent?: number } | undefined
+            const recommendation = data.recommendation as string | undefined
+
+            if (verdict && listPrice && estimatedValue) {
+                const icon = verdict === 'Fair Price' ? '✅' : verdict === 'Underpriced' ? '🎉' : '⚠️'
+                let response = `${icon} **${verdict}**\n\n` +
+                    `• List Price: $${listPrice.toLocaleString()}\n` +
+                    `• Estimated Value: $${estimatedValue.toLocaleString()}\n`
+
+                if (valueRange) {
+                    response += `• Value Range: $${valueRange.low?.toLocaleString()} - $${valueRange.high?.toLocaleString()}\n`
+                }
+
+                if (difference) {
+                    const diffIcon = (difference.amount || 0) < 0 ? '📉' : '📈'
+                    response += `\n${diffIcon} Difference: $${Math.abs(difference.amount || 0).toLocaleString()} (${Math.abs(difference.percent || 0).toFixed(1)}%)\n`
+                }
+
+                if (recommendation) {
+                    response += `\n**Recommendation:** ${recommendation}`
+                }
+
+                return response
+            }
+            return "I need property value data to determine if it's overpriced."
+        }
+
         case 'financial_cost': {
             const totalMonthly = data.totalMonthly as number | undefined
             const breakdown = data.breakdown as { mortgage?: number; propertyTax?: number; insurance?: number; hoa?: number; maintenance?: number } | undefined
@@ -141,11 +173,170 @@ function formatAnswer(
             return "Let me look up the schools in this area..."
         }
 
-        default:
+        case 'location_amenities': {
+            const places = data.google_places as { places?: Array<{ displayName?: { text?: string }; formattedAddress?: string; rating?: number; types?: string[] }> } | undefined
+            if (places?.places && places.places.length > 0) {
+                let response = `**Nearby Places:**\n\n`
+                for (const place of places.places.slice(0, 5)) {
+                    response += `• **${place.displayName?.text}** - ${place.rating ? `⭐ ${place.rating}` : 'No rating'}\n`
+                    response += `  ${place.formattedAddress}\n\n`
+                }
+                return response
+            }
+            return "Let me search for nearby amenities..."
+        }
+
+        case 'location_commute': {
+            const routes = data.google_routes as { routes?: Array<{ duration?: string; distanceMeters?: number; staticDuration?: string }> } | undefined
+            if (routes?.routes?.[0]) {
+                const route = routes.routes[0]
+                const minutes = Math.round(parseInt((route.duration || '0').replace('s', '')) / 60)
+                const miles = Math.round((route.distanceMeters || 0) / 1609.34 * 10) / 10
+                return `**Commute Analysis:**\n\n` +
+                    `• Drive Time: ${minutes} minutes\n` +
+                    `• Distance: ${miles} miles\n\n` +
+                    `*Note: Times may vary with traffic conditions.*`
+            }
+            return "Please specify a destination for commute calculation."
+        }
+
+        case 'environmental_risk': {
+            const fema = data.fema as { floodZone?: string } | undefined
+            const wildfire = data.wildfire as { riskLevel?: string } | undefined
+            const usgs = data.usgs as { features?: Array<unknown> } | undefined
+
+            let response = `**Environmental Risk Assessment:**\n\n`
+
+            if (fema) {
+                const isHighRisk = fema.floodZone !== 'X'
+                response += `• Flood Zone: ${fema.floodZone} ${isHighRisk ? '⚠️' : '✅'}\n`
+            }
+            if (wildfire) {
+                const isHighRisk = wildfire.riskLevel === 'high' || wildfire.riskLevel === 'very high'
+                response += `• Wildfire Risk: ${wildfire.riskLevel} ${isHighRisk ? '🔥' : '✅'}\n`
+            }
+            if (usgs) {
+                response += `• Recent Earthquakes: ${usgs.features?.length || 0} in past 30 days\n`
+            }
+
+            return response
+        }
+
+        case 'environmental_quality': {
+            const noise = data.howloud as { score?: number; traffic?: number; airport?: number; local?: number } | undefined
+            const airquality = data.airquality as { aqi?: number; category?: string } | undefined
+
+            let response = `**Environmental Quality:**\n\n`
+
+            if (noise) {
+                const quietness = noise.score && noise.score > 70 ? 'Very Quiet 🤫' : noise.score && noise.score > 50 ? 'Moderate 🔉' : 'Noisy 🔊'
+                response += `• Noise Level: ${quietness} (Score: ${noise.score}/100)\n`
+                response += `  - Traffic: ${noise.traffic}/100, Airport: ${noise.airport}/100, Local: ${noise.local}/100\n`
+            }
+            if (airquality) {
+                response += `• Air Quality: ${airquality.category} (AQI: ${airquality.aqi})\n`
+            }
+
+            return response
+        }
+
+        case 'utilities': {
+            const broadband = data.broadband as { providers?: Array<{ name?: string; maxSpeed?: number }> } | undefined
+
+            if (broadband?.providers && broadband.providers.length > 0) {
+                let response = `**Internet Providers:**\n\n`
+                for (const provider of broadband.providers.slice(0, 4)) {
+                    response += `• **${provider.name}** - Up to ${provider.maxSpeed} Mbps\n`
+                }
+                return response
+            }
+            return "Let me check what internet providers are available..."
+        }
+
+        case 'financial_mortgage': {
+            const rates = data.fred as { rate30yr?: number; rate15yr?: number } | undefined
+
+            if (rates) {
+                return `**Current Mortgage Rates:**\n\n` +
+                    `• 30-Year Fixed: ${rates.rate30yr}%\n` +
+                    `• 15-Year Fixed: ${rates.rate15yr}%\n\n` +
+                    `*Rates updated from Federal Reserve data.*`
+            }
+            return "Let me get the current mortgage rates..."
+        }
+
+        case 'neighborhood_vibe': {
+            const perplexity = data.queries as Array<{ content?: string }> | undefined
+
+            if (perplexity && perplexity.length > 0) {
+                return perplexity[0].content || "I couldn't find specific neighborhood sentiment information."
+            }
+            return "Let me search for what residents say about this area..."
+        }
+
+        case 'neighborhood_demographics': {
+            const census = data.census as { population?: number; medianIncome?: number; medianAge?: number } | undefined
+
+            if (census) {
+                return `**Demographics:**\n\n` +
+                    `• Population: ${census.population?.toLocaleString()}\n` +
+                    `• Median Income: $${census.medianIncome?.toLocaleString()}\n` +
+                    `• Median Age: ${census.medianAge} years`
+            }
+            return "Let me look up the demographics for this area..."
+        }
+
+        case 'property_features':
+        case 'property_condition':
+        case 'property_history':
+        case 'property_legal': {
+            const perplexity = data.queries as Array<{ content?: string }> | undefined
+
+            if (perplexity && perplexity.length > 0) {
+                return perplexity[0].content || "I need more specific information to answer this."
+            }
+            return "Let me search for that property information..."
+        }
+
+        default: {
+            // Try to format the data nicely even for unknown categories
             if (Object.keys(data).length > 0) {
-                return `Here's what I found:\n\n${JSON.stringify(data, null, 2).slice(0, 500)}...`
+                // Check for common patterns and format appropriately
+                if (data.schools || data.raw) {
+                    const schools = data.schools as Array<{ name?: string; rating?: number; type?: string }> | undefined
+                    const raw = data.raw as string | undefined
+                    if (schools && schools.length > 0) {
+                        let response = `**School Information:**\n\n`
+                        for (const school of schools.slice(0, 5)) {
+                            if (school.name) {
+                                response += `• **${school.name}** ${school.type ? `(${school.type})` : ''}\n`
+                                if (school.rating) response += `  Rating: ${school.rating}/10\n`
+                            }
+                        }
+                        return response
+                    }
+                    if (raw) return raw
+                }
+
+                if (data.crime || data.safety) {
+                    const crime = data.crime as { grade?: string; violent?: number; property?: number } | undefined
+                    if (crime) {
+                        return `**Safety Information:**\n\n` +
+                            `• Grade: ${crime.grade || 'N/A'}\n` +
+                            `• Violent Crime Index: ${crime.violent || 'N/A'}\n` +
+                            `• Property Crime Index: ${crime.property || 'N/A'}`
+                    }
+                }
+
+                // Last resort: pretty print but truncate
+                const jsonStr = JSON.stringify(data, null, 2)
+                if (jsonStr.length < 300) {
+                    return `Here's what I found:\n\n${jsonStr}`
+                }
+                return `Here's a summary of the data I found. The full details are available but quite detailed. Would you like me to focus on a specific aspect?`
             }
             return "I'm still gathering information. Could you be more specific about what you'd like to know?"
+        }
     }
 }
 
