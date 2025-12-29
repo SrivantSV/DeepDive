@@ -24,13 +24,28 @@ export async function validateAndEnrich(
     const validationQuery = buildValidationQuery(category, apiData, context)
 
     if (!validationQuery) {
-        // No validation needed for this category
+        // If we couldn't build a query because data was missing (checked inside buildValidationQuery),
+        // return LOW confidence to trigger fallback.
+        // UNLESS it's a category handled elsewhere (valuation/investment).
+
+        if (['financial_value', 'financial_investment'].includes(category)) {
+            return {
+                isValid: true,
+                confidence: 'high', // Handled by specialized handler
+                enrichedData: apiData,
+                corrections: [],
+                additionalContext: '',
+                sources: [],
+            }
+        }
+
+        console.log(`[Validator] Insufficient data for validation query, triggering fallback`)
         return {
-            isValid: true,
-            confidence: 'medium',
+            isValid: false,
+            confidence: 'low',
             enrichedData: apiData,
             corrections: [],
-            additionalContext: '',
+            additionalContext: 'Insufficient API data',
             sources: [],
         }
     }
@@ -54,10 +69,16 @@ function buildValidationQuery(
     context: { address: string; city: string; state: string; zipCode: string }
 ): { query: string; systemPrompt: string } | null {
 
+    // Helper to check if we have meaningful data
+    const hasData = (obj: any) => obj && Object.keys(obj).length > 0 && !Object.values(obj).every(v => v === undefined || v === null || v === '')
+
     switch (category) {
         case 'neighborhood_demographics':
+            const demographics = apiData.census?.demographics || apiData.demographics
+            if (!hasData(demographics)) return null // Force fallback
+
             return {
-                query: `Verify demographics for ${context.city}, ${context.zipCode}: Population ${apiData.total_population}, Median income $${apiData.median_household_income}, Median age ${apiData.median_age}. Are these numbers accurate for 2024?`,
+                query: `Verify demographics for ${context.city}, ${context.zipCode}: Population ${demographics.total_population}, Median income $${demographics.median_household_income}, Median age ${demographics.median_age}. Are these numbers accurate for 2024?`,
                 systemPrompt: `You are a demographic data analyst. Verify these Census statistics against current data.
         
         If the numbers seem off, provide corrected values with sources.
@@ -67,8 +88,11 @@ function buildValidationQuery(
             }
 
         case 'schools':
+            const schools = apiData.greatschools?.schools || apiData.schools
+            if (!isArrayWithContent(schools)) return null // Force fallback
+
             return {
-                query: `Verify school ratings near ${context.address}: ${JSON.stringify(apiData.schools?.slice(0, 3) || [])}. Are these ratings current? What are the actual GreatSchools ratings?`,
+                query: `Verify school ratings near ${context.address}: ${JSON.stringify(schools.slice(0, 3))}. Are these ratings current? What are the actual GreatSchools ratings?`,
                 systemPrompt: `You are an education researcher. Verify school ratings against GreatSchools.org and Niche.com.
         
         Provide:
@@ -81,8 +105,11 @@ function buildValidationQuery(
 
         case 'neighborhood_safety':
         case 'crime':
+            const crime = apiData.neighborhoodscout?.crime || apiData.crime || apiData.spotcrime
+            if (!hasData(crime)) return null // Force fallback
+
             return {
-                query: `Verify crime statistics for ${context.city}, ${context.zipCode}: ${JSON.stringify(apiData.crime || apiData)}. What are the actual crime rates? Is this area safe?`,
+                query: `Verify crime statistics for ${context.city}, ${context.zipCode}: ${JSON.stringify(crime)}. What are the actual crime rates? Is this area safe?`,
                 systemPrompt: `You are a public safety analyst. Verify crime data against FBI UCR, local police reports, and NeighborhoodScout.
         
         Provide:
@@ -94,8 +121,14 @@ function buildValidationQuery(
             }
 
         case 'environmental_risk':
+            // Check each sub-source
+            const flood = apiData.fema?.floodZone || apiData.floodZone
+            const fire = apiData.wildfire?.risk_index || apiData.wildfireRisk
+
+            if (!flood && !fire) return null // Force fallback
+
             return {
-                query: `Verify environmental risks for ${context.address}: Flood zone ${apiData.floodZone || 'unknown'}, Wildfire risk ${apiData.wildfireRisk || 'unknown'}, Earthquake risk ${apiData.earthquakeRisk || 'unknown'}`,
+                query: `Verify environmental risks for ${context.address}: Flood zone ${flood || 'unknown'}, Wildfire risk ${fire || 'unknown'}.`,
                 systemPrompt: `You are an environmental risk analyst. Verify these risks against FEMA flood maps, CAL FIRE data, and USGS earthquake data.
         
         Provide:
@@ -112,8 +145,11 @@ function buildValidationQuery(
             return null
 
         case 'location_commute':
+            const route = apiData.google_routes?.routes?.[0] || apiData.routes?.[0]
+            if (!route) return null // Force fallback
+
             return {
-                query: `Verify commute from ${context.address} to downtown San Francisco. API says ${apiData.duration || 'unknown'} minutes. What is the actual commute time with traffic?`,
+                query: `Verify commute from ${context.address} to downtown San Francisco. API says ${route.duration || 'unknown'}. What is the actual commute time with traffic?`,
                 systemPrompt: `You are a commute analyst. Verify commute times using Google Maps and local knowledge.
         
         Provide:
@@ -127,6 +163,10 @@ function buildValidationQuery(
         default:
             return null
     }
+}
+
+function isArrayWithContent(arr: any): boolean {
+    return Array.isArray(arr) && arr.length > 0 && Object.keys(arr[0]).length > 0
 }
 
 function parseValidationResponse(

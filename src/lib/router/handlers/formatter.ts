@@ -161,14 +161,19 @@ function formatAnswer(
 
         case 'schools': {
             const gs = data.greatschools as { schools?: Array<{ name?: string; gradeRange?: string; rating?: number; distance?: number }> } | undefined
-            if (gs?.schools) {
-                const schools = gs.schools.slice(0, 3)
-                let response = "**Nearby Schools:**\n\n"
-                for (const school of schools) {
-                    response += `• **${school.name}** (${school.gradeRange})\n`
-                    response += `  Rating: ${school.rating}/10 | ${school.distance} miles away\n\n`
+            const schools = gs?.schools || (data.schools as any[])
+
+            if (schools && schools.length > 0) {
+                const validSchools = schools.filter(s => s && s.name && s.name !== 'undefined')
+
+                if (validSchools.length > 0) {
+                    let response = "**Nearby Schools:**\n\n"
+                    for (const school of validSchools.slice(0, 3)) {
+                        response += `• **${school.name}** (${school.gradeRange || 'K-12'})\n`
+                        response += `  Rating: ${school.rating || 'N/A'}/10 | ${school.distance || '?'} miles away\n\n`
+                    }
+                    return response
                 }
-                return response
             }
             return "Let me look up the schools in this area..."
         }

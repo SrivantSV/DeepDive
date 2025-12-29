@@ -91,6 +91,44 @@ export async function routeQuestion(input: {
         }
     }
 
+    // Step 4b: Run Extrapolator if needed
+    if (needsExtrapolation(category)) {
+        try {
+            // Map category to extrapolation type
+            const categoryToType: Record<string, string> = {
+                financial_value: 'overpriced_check',
+                financial_investment: 'investment_analysis',
+                financial_cost: 'true_monthly_cost',
+                red_flags: 'red_flags',
+                comparison: 'comparison', // Might need recipe
+            }
+
+            const type = categoryToType[category]
+            // Use EXTRAPOLATION_RECIPES from api-index
+            const recipe = EXTRAPOLATION_RECIPES[type]
+
+            if (type && recipe) {
+                console.log(`[Router] Running Extrapolator: ${type}`)
+                const config = {
+                    type,
+                    dataSources: recipe.dataSources,
+                    logic: recipe.logic
+                }
+
+                // Pass the handlerResults as context/data for extrapolation
+                const extraContext = { ...context, ...handlerResults }
+                const extrapolationResult = await handleExtrapolation(config, extraContext as any)
+
+                if (extrapolationResult.success && extrapolationResult.data) {
+                    handlerResults = { ...handlerResults, ...extrapolationResult.data }
+                    sources.push('Extrapolator')
+                }
+            }
+        } catch (error) {
+            console.error('[Router] Extrapolator error:', error)
+        }
+    }
+
     // Step 5: ALWAYS validate and enrich with Perplexity
     console.log(`[Router] Validating with Perplexity...`)
     const validation = await validateAndEnrich(category, handlerResults, context)
