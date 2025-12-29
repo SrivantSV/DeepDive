@@ -73,6 +73,31 @@ interface Message {
     responseTime?: number
 }
 
+// --- Helper Functions ---
+
+// Safe data formatters
+const safeNumber = (value: any, fallback: string = 'N/A'): string => {
+    if (value === null || value === undefined || isNaN(value)) return fallback
+    if (typeof value === 'number') return value.toLocaleString()
+    return String(value)
+}
+
+const safeLotSize = (sqft: number | undefined): string => {
+    if (!sqft || isNaN(sqft)) return 'N/A'
+    if (sqft >= 43560) return `${(sqft / 43560).toFixed(2)} ac`
+    return `${sqft.toLocaleString()} sqft`
+}
+
+const safePrice = (price: number | undefined): string => {
+    if (!price || isNaN(price)) return 'N/A'
+    return `$${price.toLocaleString()}`
+}
+
+const safePricePerSqft = (price: number | undefined, sqft: number | undefined): string => {
+    if (!price || !sqft || isNaN(price) || isNaN(sqft) || sqft === 0) return 'N/A'
+    return `$${Math.round(price / sqft).toLocaleString()}`
+}
+
 // --- Helper Components ---
 
 function MarkdownRenderer({ content }: { content: string }) {
@@ -402,8 +427,8 @@ export default function PropertyPage() {
                                         {formatPrice(listing.listPrice)}
                                     </h1>
                                     <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide border ${listing.mls.status === 'Active'
-                                            ? 'bg-green-100 text-green-700 border-green-200'
-                                            : 'bg-yellow-100 text-yellow-700 border-yellow-200'
+                                        ? 'bg-green-100 text-green-700 border-green-200'
+                                        : 'bg-yellow-100 text-yellow-700 border-yellow-200'
                                         }`}>
                                         {listing.mls.status}
                                     </span>
@@ -433,21 +458,31 @@ export default function PropertyPage() {
                         </div>
 
                         {/* Quick Stats Grid */}
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-                            {[
-                                { label: 'Price/SqFt', value: `$${(listing.listPrice / listing.property.area).toFixed(0)}`, icon: DollarSign },
-                                { label: 'Days on Market', value: listing.mls.daysOnMarket, icon: Calendar },
-                                { label: 'Lot Size', value: listing.property.lotSize ? `${(listing.property.lotSize / 43560).toFixed(2)} ac` : 'N/A', icon: MapPin },
-                                { label: 'Garage', value: listing.property.garageSpaces, icon: Car },
-                            ].map((stat, i) => (
-                                <div key={i} className="glass-card p-4 rounded-xl flex flex-col items-center justify-center text-center hover:scale-[1.02] transition-transform">
-                                    <div className="mb-2 p-2 bg-blue-50 text-blue-600 rounded-lg">
-                                        <stat.icon className="w-5 h-5" />
-                                    </div>
-                                    <div className="font-bold text-slate-900 text-lg">{stat.value}</div>
-                                    <div className="text-xs text-slate-500 font-medium">{stat.label}</div>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-xl p-4 text-center">
+                                <div className="text-2xl font-bold text-blue-700">
+                                    {safePricePerSqft(listing.listPrice, listing.property.area)}
                                 </div>
-                            ))}
+                                <div className="text-sm text-blue-600/70">Price/sqft</div>
+                            </div>
+                            <div className="bg-gradient-to-br from-purple-50 to-purple-100/50 rounded-xl p-4 text-center">
+                                <div className="text-2xl font-bold text-purple-700">
+                                    {safeNumber(listing.mls.daysOnMarket)}
+                                </div>
+                                <div className="text-sm text-purple-600/70">Days on Market</div>
+                            </div>
+                            <div className="bg-gradient-to-br from-emerald-50 to-emerald-100/50 rounded-xl p-4 text-center">
+                                <div className="text-2xl font-bold text-emerald-700">
+                                    {safeLotSize(listing.property.lotSize)}
+                                </div>
+                                <div className="text-sm text-emerald-600/70">Lot Size</div>
+                            </div>
+                            <div className="bg-gradient-to-br from-amber-50 to-amber-100/50 rounded-xl p-4 text-center">
+                                <div className="text-2xl font-bold text-amber-700">
+                                    {safeNumber(listing.property.garageSpaces, '0')}
+                                </div>
+                                <div className="text-sm text-amber-600/70">Garage</div>
+                            </div>
                         </div>
 
                         {/* About Section */}
