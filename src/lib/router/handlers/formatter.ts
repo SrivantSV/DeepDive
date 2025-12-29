@@ -266,12 +266,37 @@ function formatAnswer(
         }
 
         case 'neighborhood_vibe': {
-            const perplexity = data.queries as Array<{ content?: string }> | undefined
+            // Try different data shapes from the new retry-based handler
+            const sentimentData = data.sentiment as { raw?: string } | undefined
+            const rawData = data.raw as string | undefined
+            const queriesData = data.queries as Array<{ response?: string; content?: string }> | undefined
+            const summaryData = data.summary as string | undefined
 
-            if (perplexity && perplexity.length > 0) {
-                return perplexity[0].content || "I couldn't find specific neighborhood sentiment information."
+            // Check for new format with sentiment object
+            if (sentimentData?.raw && sentimentData.raw.length > 100) {
+                return `**What Residents Say About ${context.city}:**\n\n${sentimentData.raw}`
             }
-            return "Let me search for what residents say about this area..."
+
+            // Check for raw string
+            if (rawData && rawData.length > 100 && !rawData.includes('Unable to find')) {
+                return `**Neighborhood Insights for ${context.city}:**\n\n${rawData}`
+            }
+
+            // Check for summary from synthesized results
+            if (summaryData && summaryData.length > 100) {
+                return `**What People Say About ${context.city}:**\n\n${summaryData}`
+            }
+
+            // Check for old format with queries array
+            if (queriesData && queriesData.length > 0) {
+                const content = queriesData[0].response || queriesData[0].content
+                if (content && content.length > 100) {
+                    return `**Neighborhood Insights:**\n\n${content}`
+                }
+            }
+
+            // Fallback with helpful suggestions
+            return `I searched Reddit, community forums, and neighborhood guides but couldn't find detailed resident feedback for ${context.city}. This might be a smaller community with less online presence.\n\nYou might want to:\n• Check Nextdoor directly\n• Look at local Facebook groups\n• Ask your real estate agent for local insights`
         }
 
         case 'neighborhood_demographics': {

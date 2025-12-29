@@ -12,6 +12,7 @@ import {
     getCrimeIncidentsViaPerplexity,
     getNoiseDataViaPerplexity,
     getPropertyDataViaPerplexity,
+    getNeighborhoodSentimentViaPerplexity,
 } from '@/lib/api/perplexity-replacements'
 
 interface ApiCall {
@@ -210,6 +211,17 @@ async function executeApiCall(
         case 'broadband': {
             const result = await utilities.getInternetProviders(context.lat, context.lng)
             return { data: result.data, source: result.source }
+        }
+
+        // Neighborhood Sentiment
+        case 'neighborhood_sentiment':
+        case 'neighborhoodSentiment': {
+            const sentimentResult = await getNeighborhoodSentimentViaPerplexity(
+                context.address,
+                context.city,
+                context.state
+            )
+            return { data: sentimentResult.data, source: sentimentResult.source as 'live' | 'mock' }
         }
 
         default:
