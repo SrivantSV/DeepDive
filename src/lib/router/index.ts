@@ -49,9 +49,11 @@ export async function routeQuestion(input: RouterInput): Promise<FormattedRespon
         handlers.push('DIRECT_API')
     }
 
-    // Default to DIRECT_API if no handlers selected
+    // Default to PERPLEXITY if no handlers selected - this handles ANY question
+    // that doesn't match a pattern by using AI search
     if (handlers.length === 0) {
-        handlers.push('DIRECT_API')
+        console.log(`[Router] No specific handler matched, using Perplexity as smart fallback`)
+        handlers.push('PERPLEXITY')
     }
 
     console.log(`[Router] Using handlers: ${handlers.join(', ')}`)
@@ -219,11 +221,17 @@ function buildPerplexityQueries(
         })
     }
 
-    // Default to neighborhood sentiment
+    // Default: use the actual question as a general query
+    // This allows Perplexity to answer ANY question about the property/area
     if (queries.length === 0) {
         queries.push({
-            template: 'neighborhoodSentiment',
-            params: { neighborhood: context.city, city: context.city },
+            template: 'general',
+            params: {
+                question: question,
+                address: context.address,
+                city: context.city,
+                state: context.state,
+            },
         })
     }
 

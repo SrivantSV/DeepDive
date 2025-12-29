@@ -98,7 +98,7 @@ export async function handlePerplexity(
     const results: Array<{ query: string; response: string; citations?: string[]; success: boolean }> = []
 
     for (const queryConfig of queries) {
-        const queryStrategies = getQueryStrategies(queryConfig.template, context)
+        const queryStrategies = getQueryStrategies(queryConfig.template, context, queryConfig.params)
 
         let foundGoodResult = false
 
@@ -159,7 +159,7 @@ export async function handlePerplexity(
     }
 }
 
-function getQueryStrategies(template: string, context: PropertyContext) {
+function getQueryStrategies(template: string, context: PropertyContext, params?: Record<string, string>) {
     switch (template) {
         case 'neighborhoodSentiment':
         case 'neighborhoodVibe':
@@ -174,11 +174,28 @@ function getQueryStrategies(template: string, context: PropertyContext) {
             return NOISE_QUERIES.map(fn => fn(context))
         case 'permitHistory':
             return PERMIT_QUERIES.map(fn => fn(context))
+        case 'general':
+            // For general questions, use the actual question with property context
+            const question = params?.question || template
+            return [
+                {
+                    query: `${question} ${context.address} ${context.city} ${context.state}`,
+                    systemPrompt: `Answer this real estate question about the property at ${context.address}, ${context.city}, ${context.state}. Be specific, factual, and helpful. If you can find specific data, include it.`,
+                },
+                {
+                    query: `${question} ${context.city} ${context.state} real estate`,
+                    systemPrompt: `Answer this question about real estate in ${context.city}, ${context.state}. Be specific and factual.`,
+                },
+                {
+                    query: question,
+                    systemPrompt: `Answer this real estate question. Provide helpful, accurate information.`,
+                },
+            ]
         default:
-            // Generic fallback
+            // Generic fallback - use template as topic
             return [{
                 query: `${context.address} ${context.city} ${template}`,
-                systemPrompt: `Find information about ${template} for this property.`,
+                systemPrompt: `Find information about ${template} for this property at ${context.address}.`,
             }]
     }
 }

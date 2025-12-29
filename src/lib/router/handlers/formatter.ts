@@ -360,6 +360,18 @@ function formatAnswer(
         }
 
         default: {
+            // First check for Perplexity response (summary or queries)
+            const summary = data.summary as string | undefined
+            const queries = data.queries as Array<{ response?: string }> | undefined
+
+            if (summary && summary.length > 50) {
+                return summary
+            }
+
+            if (queries && queries.length > 0 && queries[0].response) {
+                return queries[0].response
+            }
+
             // Try to format the data nicely even for unknown categories
             if (Object.keys(data).length > 0) {
                 // Check for common patterns and format appropriately
