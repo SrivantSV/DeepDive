@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import ReactMarkdown from 'react-markdown'
@@ -93,7 +93,7 @@ function MarkdownRenderer({ content }: { content: string }) {
 
 // --- Main Page Component ---
 
-export default function DeepDivePage() {
+function DeepDiveContent() {
     const searchParams = useSearchParams()
     const query = searchParams.get('q')
 
@@ -530,5 +530,24 @@ export default function DeepDivePage() {
                 </div>
             </main>
         </div>
+    )
+}
+
+export default function DeepDivePage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+                <div className="flex flex-col items-center gap-6 max-w-md text-center px-4">
+                    <div className="relative">
+                        <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                        <div className="absolute inset-0 flex items-center justify-center">
+                            <Sparkles className="w-6 h-6 text-blue-600 animate-pulse" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }>
+            <DeepDiveContent />
+        </Suspense>
     )
 }

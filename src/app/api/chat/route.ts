@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { routeQuestion, routeQuestionStreaming } from '@/lib/router'
 
 export const runtime = 'nodejs'
-// export const dynamic = 'force-dynamic' // remove if causing build issues, but good for streaming
 
 export async function POST(request: NextRequest) {
     try {
@@ -20,53 +19,47 @@ export async function POST(request: NextRequest) {
             },
         }
 
-        console.log(`[Chat API] Processing question: "${input.question}"`)
-
-        // Check if client wants streaming (checking via specific header or assumption)
-        // For now, we assume all POSTs to this endpoint want streaming if they can handle it.
-        // But to be safe and compatible with previous code, let's use the new streaming route.
+        console.log(`[Chat API] Processing question (streaming): "${input.question}"`)
 
         const encoder = new TextEncoder()
+        const stream = new TransformStream()
+        const writer = stream.writable.getWriter()
 
-        const stream = new ReadableStream({
-            async start(controller) {
-                try {
-                    // Stream callback
-                    const onChunk = (chunk: string) => {
-                        const data = JSON.stringify({ type: 'chunk', content: chunk })
-                        controller.enqueue(encoder.encode(`data: ${data}\n\n`))
-                    }
-
-                    const onMetadata = (metadata: any) => {
-                        const data = JSON.stringify({ type: 'metadata', ...metadata })
-                        controller.enqueue(encoder.encode(`data: ${data}\n\n`))
-                    }
-
-                    // Run the router with streaming
-                    const result = await routeQuestionStreaming(
-                        input,
-                        onChunk,
-                        onMetadata
-                    )
-
-                    // Send final result
-                    const finalData = JSON.stringify({ type: 'done', ...result })
-                    controller.enqueue(encoder.encode(`data: ${finalData}\n\n`))
-
-                } catch (error) {
-                    console.error('[Chat API] Streaming Error:', error)
-                    const errorData = JSON.stringify({
-                        type: 'error',
-                        error: error instanceof Error ? error.message : 'Unknown error'
-                    })
-                    controller.enqueue(encoder.encode(`data: ${errorData}\n\n`))
-                } finally {
-                    controller.close()
+        // Start processing in the background
+        const process = async () => {
+            try {
+                const onChunk = async (chunk: string) => {
+                    const data = JSON.stringify({ type: 'chunk', content: chunk })
+                    await writer.write(encoder.encode(`data: ${data}\n\n`))
                 }
-            },
-        })
 
-        return new Response(stream, {
+                const onMetadata = async (metadata: any) => {
+                    const data = JSON.stringify({ type: 'metadata', ...metadata })
+                    await writer.write(encoder.encode(`data: ${data}\n\n`))
+                }
+
+                await routeQuestionStreaming(
+                    input,
+                    onChunk,
+                    onMetadata
+                )
+
+                await writer.write(encoder.encode(`data: ${JSON.stringify({ type: 'done' })}\n\n`))
+            } catch (error) {
+                console.error('[Chat API] Streaming error:', error)
+                const errorData = JSON.stringify({
+                    type: 'error',
+                    error: error instanceof Error ? error.message : 'Unknown error'
+                })
+                await writer.write(encoder.encode(`data: ${errorData}\n\n`))
+            } finally {
+                await writer.close()
+            }
+        }
+
+        process()
+
+        return new Response(stream.readable, {
             headers: {
                 'Content-Type': 'text/event-stream',
                 'Cache-Control': 'no-cache',
@@ -88,7 +81,6 @@ export async function POST(request: NextRequest) {
     }
 }
 
-// Keep non-streaming endpoint for simple testing via Browser GET
 export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams
     const question = searchParams.get('q')
@@ -115,6 +107,11 @@ export async function GET(request: NextRequest) {
             zipCode: '94526',
             city: 'Danville',
             state: 'CA',
+            price: 1200000,
+            bedrooms: 4,
+            bathrooms: 2,
+            sqft: 2000,
+            yearBuilt: 1980,
         },
     }
 
