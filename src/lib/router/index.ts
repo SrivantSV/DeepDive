@@ -6,7 +6,11 @@ import { handlePerplexity } from './handlers/perplexity'
 import { handleVision } from './handlers/vision'
 import { formatResponse } from './handlers/formatter'
 import { validateAndEnrich, answerAnyQuestion } from '@/lib/api/ai/perplexity-validator'
-import { getComprehensiveValuation, analyzeIfOverpriced } from '@/lib/api/ai/perplexity-valuation'
+import {
+    getComprehensiveValuation,
+    analyzeIfOverpriced,
+    analyzeInvestmentPotential
+} from '@/lib/api/ai/perplexity-valuation'
 import {
     RouterInput,
     RouterDecision,
@@ -275,98 +279,51 @@ async function handleInvestmentQuestion(
     startTime: number
 ): Promise<RouterResponse> {
 
-    console.log(`[Router] Handling investment question with Perplexity`)
+    console.log(`[Router] Handling investment question`)
 
-    // Get valuation data
-    const valuation = await getComprehensiveValuation(context.address, {
+    const investment = await analyzeInvestmentPotential(context.address, {
+        price: context.price,
         beds: context.bedrooms,
         baths: context.bathrooms,
         sqft: context.sqft,
         yearBuilt: context.yearBuilt,
-        listPrice: context.price,
     })
 
-    // Get rental estimate via Perplexity
-    const rentalQuery = await queryPerplexity(
-        `What is the rental estimate for ${context.address}? ${context.bedrooms} beds, ${context.bathrooms} baths, ${context.sqft} sqft. Search Rentometer, Zillow rent Zestimate, and Rentcast.`,
-        `You are a rental market analyst. Find rental estimates for this property.
-    
-    Provide:
-    1. Estimated monthly rent
-    2. Rent range (low to high)
-    3. Rent per sqft
-    4. Comparable rentals nearby
-    5. Rental market trend (increasing/stable/decreasing)`
-    )
+    const data = investment.data
 
-    const rentalContent = rentalQuery.data?.choices?.[0]?.message?.content || ''
+    const scoreLabel = data.investmentScore >= 70 ? '✅ Strong'
+        : data.investmentScore >= 50 ? '⚠️ Moderate'
+            : '❌ Below Average'
 
-    // Extract rent estimate
-    const rentMatch = rentalContent.match(/\$?([\d,]+)\s*(?:\/month|per month|monthly)/i)
-    const estimatedRent = rentMatch ? parseInt(rentMatch[1].replace(/,/g, '')) : null
-
-    // Calculate investment metrics
-    const propertyValue = valuation.data.estimatedValue || context.price || 0
-    const monthlyRent = estimatedRent || Math.round(propertyValue * 0.004) // Default 0.4% rule
-    const annualRent = monthlyRent * 12
-    const expenses = annualRent * 0.35 // 35% expense ratio
-    const noi = annualRent - expenses
-    const capRate = propertyValue > 0 ? (noi / propertyValue) * 100 : 0
-
-    const downPayment = propertyValue * 0.20
-    const loanAmount = propertyValue * 0.80
-    const monthlyMortgage = (loanAmount * 0.065 / 12) / (1 - Math.pow(1 + 0.065 / 12, -360))
-    const annualMortgage = monthlyMortgage * 12
-    const annualCashFlow = noi - annualMortgage
-    const cashOnCash = downPayment > 0 ? (annualCashFlow / downPayment) * 100 : 0
-
-    // Score 1-100
-    let score = 50
-    if (capRate > 5) score += 15
-    if (capRate > 7) score += 10
-    if (cashOnCash > 5) score += 10
-    if (cashOnCash > 8) score += 10
-    if (annualCashFlow > 0) score += 5
-    if (valuation.data.marketTrend === 'rising') score += 5
-    if (valuation.data.marketTrend === 'declining') score -= 10
-
-    const investmentResponse = `## Investment Analysis: ${score >= 70 ? '✅ Strong' : score >= 50 ? '⚠️ Average' : '❌ Below Average'} (Score: ${score}/100)
+    const answer = `## Investment Analysis: ${scoreLabel} (Score: ${data.investmentScore}/100)
 
 ### Property Value
-- **Estimated Value:** ${valuation.data.estimatedValue ? `$${valuation.data.estimatedValue.toLocaleString()}` : 'Unknown'}
-- **List Price:** ${context.price ? `$${context.price.toLocaleString()}` : 'Not provided'}
-- **Price/sqft:** ${valuation.data.pricePerSqft ? `$${valuation.data.pricePerSqft}` : 'Unknown'}
+- **Estimated Value:** ${context.price ? `$${context.price.toLocaleString()}` : 'Not provided'}
+- **Price/sqft:** ${context.sqft && context.price ? `$${Math.round(context.price / context.sqft)}` : 'Unknown'}
 
 ### Rental Income
-- **Estimated Monthly Rent:** $${monthlyRent.toLocaleString()}
-- **Annual Gross Rent:** $${annualRent.toLocaleString()}
-- **Net Operating Income:** $${noi.toLocaleString()} (after 35% expenses)
+- **Estimated Monthly Rent:** ${data.monthlyRent ? `$${data.monthlyRent.toLocaleString()}` : 'Unknown'}
+- **Annual Gross Rent:** ${data.annualRent ? `$${data.annualRent.toLocaleString()}` : 'Unknown'}
+- **Net Operating Income:** ${data.noi ? `$${data.noi.toLocaleString()}` : 'Unknown'} (after 35% expenses)
 
 ### Key Metrics
-- **Cap Rate:** ${capRate.toFixed(2)}% ${capRate > 5 ? '✅' : '⚠️'}
-- **Cash-on-Cash Return:** ${cashOnCash.toFixed(2)}% ${cashOnCash > 8 ? '✅' : '⚠️'}
-- **Monthly Cash Flow:** $${Math.round(annualCashFlow / 12).toLocaleString()} ${annualCashFlow > 0 ? '✅' : '❌'}
+- **Cap Rate:** ${data.capRate ? `${data.capRate.toFixed(2)}%` : 'N/A'} ${data.capRate && data.capRate > 5 ? '✅' : '⚠️'}
+- **Cash-on-Cash Return:** ${data.cashOnCash ? `${data.cashOnCash.toFixed(2)}%` : 'N/A'} ${data.cashOnCash && data.cashOnCash > 6 ? '✅' : '⚠️'}
+- **Monthly Cash Flow:** ${data.monthlyCashFlow ? `$${data.monthlyCashFlow.toLocaleString()}` : 'N/A'} ${data.monthlyCashFlow > 0 ? '✅' : '❌'}
 
-### Market Context
-- **Market Trend:** ${valuation.data.marketTrend || 'Unknown'}
-- **Days on Market:** ${valuation.data.daysOnMarket || 'Unknown'}
-
-### Rental Market
-${rentalContent}
+### Market Analysis
+${data.rawAnalysis}
 
 ### Recommendation
-${score >= 70 ? 'This property shows strong investment potential with solid rental income and good returns.' :
-            score >= 50 ? 'This property has average investment potential. Consider negotiating the price or look for value-add opportunities.' :
-                'This property may not be ideal for investment at current prices. The returns are below market expectations.'}
+${data.investmentScore >= 70 ? 'This property shows strong investment potential with solid rental income.' :
+            data.investmentScore >= 50 ? 'This property has moderate investment potential. Consider negotiating the price.' :
+                'This property may not be ideal for investment at current prices.'}
 `
 
     return {
-        answer: investmentResponse,
-        confidence: valuation.data.confidence,
-        sources: [
-            ...valuation.data.sources,
-            ...(rentalQuery.data?.citations || []),
-        ],
+        answer,
+        confidence: data.monthlyRent ? 'high' : 'medium',
+        sources: data.sources,
         followUpSuggestions: [
             'What would the Airbnb income be?',
             'Is this property overpriced?',
