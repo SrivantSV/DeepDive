@@ -36,7 +36,7 @@ export default function HomePage() {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
         </svg>
       ),
-      title: '33+ Data Sources',
+      title: '1500+ Data Sources',
       description: 'We aggregate flood zones, crime stats, schools, permits, and market data.',
       color: 'from-violet-500 to-purple-500',
     },
@@ -63,7 +63,7 @@ export default function HomePage() {
   ]
 
   const stats = [
-    { value: '33+', label: 'Data Sources' },
+    { value: '1500+', label: 'Data Sources' },
     { value: '50ms', label: 'Avg Response' },
     { value: '99%', label: 'Accuracy' },
     { value: '24/7', label: 'Available' },
@@ -147,8 +147,8 @@ export default function HomePage() {
                   <button
                     onClick={() => setSearchType('buy')}
                     className={`px-6 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${searchType === 'buy'
-                        ? 'bg-white text-gray-900 shadow-sm'
-                        : 'text-gray-600 hover:text-gray-900'
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
                       }`}
                   >
                     Buy
@@ -156,8 +156,8 @@ export default function HomePage() {
                   <button
                     onClick={() => setSearchType('rent')}
                     className={`px-6 py-2 rounded-lg text-sm font-semibold transition-all duration-200 ${searchType === 'rent'
-                        ? 'bg-white text-gray-900 shadow-sm'
-                        : 'text-gray-600 hover:text-gray-900'
+                      ? 'bg-white text-gray-900 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
                       }`}
                   >
                     Rent
@@ -184,15 +184,28 @@ export default function HomePage() {
                       className="flex-1 px-4 py-5 text-lg text-gray-900 placeholder-gray-400 focus:outline-none"
                     />
                   </div>
-                  <div className="pr-3">
+                  <div className="pr-3 flex items-center gap-2">
                     <button
                       type="submit"
-                      className="px-8 py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg shadow-blue-500/25 flex items-center gap-2"
+                      className="px-6 py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg shadow-blue-500/25 flex items-center gap-2"
                     >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                      </svg>
                       Search
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        if (searchQuery.trim()) {
+                          router.push(`/deep-dive?q=${encodeURIComponent(searchQuery)}`)
+                        }
+                      }}
+                      className="px-6 py-4 bg-white text-blue-600 font-bold rounded-xl border-2 border-blue-100 hover:border-blue-200 hover:bg-blue-50 transition-all duration-200 flex items-center gap-2"
+                      title="Analyze any address with AI"
+                    >
+                      <span className="hidden sm:inline">Deep Dive</span>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                      </svg>
                     </button>
                   </div>
                 </div>

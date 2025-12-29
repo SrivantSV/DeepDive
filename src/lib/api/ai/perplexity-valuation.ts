@@ -460,3 +460,93 @@ INVESTMENT_RATING: [STRONG / MODERATE / WEAK]
         source: 'live',
     }
 }
+// ============================================
+// GATHER PROPERTY DETAILS (DEEP DIVE)
+// ============================================
+
+export interface PropertyDetails {
+    address: string
+    city: string
+    state: string
+    zipCode: string
+    estimatedValue: number | null
+    beds: number | null
+    baths: number | null
+    sqft: number | null
+    yearBuilt: number | null
+    lotSize: number | null
+    propertyType: string | null
+    description: string
+    sources: string[]
+}
+
+export async function gatherPropertyDetails(address: string): Promise<{ data: PropertyDetails; source: 'live' }> {
+    const response = await queryPerplexity(
+        `Gather detailed facts about the property at: ${address}.
+    
+    Find:
+    1. Beds, Baths, Square Footage
+    2. Year Built and Lot Size
+    3. Estimated Market Value (Zestimate/Redfin)
+    4. Property Type (Single Family, Condo, etc.)
+    5. A brief description of the property features
+    
+    If exact numbers differ between sources, use the most reliable recent source.`,
+
+        `You are a property data collector.
+    
+    Structure your response EXACTLY like this:
+    
+    ADDRESS: [Full normalized address]
+    CITY: [City]
+    STATE: [State code]
+    ZIP: [Zip code]
+    
+    ESTIMATED_VALUE: $[amount]
+    BEDS: [number]
+    BATHS: [number]
+    SQFT: [number]
+    YEAR_BUILT: [year]
+    LOT_SIZE: [number] sqft
+    PROPERTY_TYPE: [type]
+    
+    DESCRIPTION:
+    [2-3 sentence description of the property style and features]
+    `
+    )
+
+    const content = response.data?.choices?.[0]?.message?.content || ''
+    const citations = response.data?.citations || []
+
+    // Helper to extract string values
+    const extractString = (key: string): string => {
+        const match = content.match(new RegExp(`${key}[:\\s]*(.+)`, 'i'))
+        return match ? match[1].trim() : ''
+    }
+
+    // Helper to extract numbers
+    const extractNumber = (key: string): number | null => {
+        const match = content.match(new RegExp(`${key}[:\\s]*\\$?([\\d,\\.]+)`, 'i'))
+        if (!match) return null
+        return parseInt(match[1].replace(/,/g, ''), 10)
+    }
+
+    return {
+        data: {
+            address: extractString('ADDRESS') || address,
+            city: extractString('CITY'),
+            state: extractString('STATE'),
+            zipCode: extractString('ZIP'),
+            estimatedValue: extractNumber('ESTIMATED_VALUE'),
+            beds: extractNumber('BEDS'),
+            baths: extractNumber('BATHS'),
+            sqft: extractNumber('SQFT'),
+            yearBuilt: extractNumber('YEAR_BUILT'),
+            lotSize: extractNumber('LOT_SIZE'),
+            propertyType: extractString('PROPERTY_TYPE') || 'Single Family',
+            description: content.match(/DESCRIPTION:([\s\S]+?)(?:$|SOURCES:)/i)?.[1]?.trim() || 'No description available.',
+            sources: citations
+        },
+        source: 'live'
+    }
+}

@@ -263,89 +263,112 @@ function SearchContent() {
                 ) : (
                     // Listings Grid
                     <div className={`grid gap-6 ${viewMode === 'grid'
-                            ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
-                            : 'grid-cols-1'
+                        ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
+                        : 'grid-cols-1'
                         }`}>
                         {listings.map((listing) => (
                             <Link
                                 key={listing.mlsId}
                                 href={`/property/${listing.mlsId}`}
-                                className={`group bg-white rounded-2xl overflow-hidden shadow-sm card-hover border border-gray-100 ${viewMode === 'list' ? 'flex' : ''
+                                className={`group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100/50 ${viewMode === 'list' ? 'flex' : ''
                                     }`}
                             >
                                 {/* Image */}
-                                <div className={`relative overflow-hidden ${viewMode === 'list' ? 'w-72 shrink-0' : 'h-52'}`}>
+                                <div className={`relative overflow-hidden ${viewMode === 'list' ? 'w-80 shrink-0' : 'h-64'}`}>
                                     {listing.photos && listing.photos.length > 0 ? (
                                         <img
                                             src={listing.photos[0]}
                                             alt={listing.address.full}
-                                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                                         />
                                     ) : (
                                         <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
-                                            <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                                            <svg className="w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                                             </svg>
                                         </div>
                                     )}
 
+                                    {/* Gradients Overlay */}
+                                    <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/60 to-transparent opacity-60 group-hover:opacity-80 transition-opacity duration-300" />
+
                                     {/* Status Badge */}
-                                    <div className="absolute top-3 left-3">
-                                        <span className={`badge ${listing.mls.status === 'Active' ? 'badge-success' : 'badge-warning'
+                                    <div className="absolute top-4 left-4">
+                                        <span className={`px-2.5 py-1 rounded-full text-xs font-semibold backdrop-blur-md shadow-sm border ${listing.mls.status === 'Active'
+                                            ? 'bg-emerald-500/90 text-white border-emerald-400/50'
+                                            : 'bg-amber-500/90 text-white border-amber-400/50'
                                             }`}>
                                             {listing.mls.status}
                                         </span>
                                     </div>
 
-                                    {/* Price Tag */}
-                                    <div className="absolute bottom-3 right-3">
-                                        <span className="px-3 py-1.5 bg-gray-900/80 text-white text-lg font-bold rounded-lg backdrop-blur-sm">
-                                            {formatPrice(listing.listPrice)}
-                                        </span>
-                                    </div>
-
                                     {/* AI Badge */}
-                                    <div className="absolute top-3 right-3">
-                                        <span className="px-2 py-1 bg-blue-600/90 text-white text-xs font-medium rounded-full backdrop-blur-sm flex items-center gap-1">
-                                            <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+                                    <div className="absolute top-4 right-4">
+                                        <span className="px-2.5 py-1 bg-white/90 text-blue-600 text-xs font-bold rounded-full backdrop-blur-md flex items-center gap-1.5 shadow-sm border border-white/50">
+                                            <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse" />
                                             AI Ready
                                         </span>
                                     </div>
+
+                                    {/* Price Tag (Overlaid) */}
+                                    {viewMode === 'grid' && (
+                                        <div className="absolute bottom-4 left-4">
+                                            <span className="text-white text-2xl font-bold tracking-tight drop-shadow-md">
+                                                {formatPrice(listing.listPrice)}
+                                            </span>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Details */}
-                                <div className="p-5 flex-1">
-                                    <h3 className="font-semibold text-gray-900 mb-1 truncate group-hover:text-blue-600 transition-colors">
-                                        {listing.address.full}
-                                    </h3>
+                                <div className="p-5 flex-1 flex flex-col justify-between group-hover:bg-slate-50/50 transition-colors duration-300">
+                                    <div>
+                                        {/* Price (List View Only) */}
+                                        {viewMode === 'list' && (
+                                            <div className="text-2xl font-bold text-gray-900 mb-1">
+                                                {formatPrice(listing.listPrice)}
+                                            </div>
+                                        )}
 
-                                    <div className="flex items-center gap-3 text-sm text-gray-600 mb-3">
-                                        <span className="flex items-center gap-1">
-                                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                                <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
+                                        <h3 className="text-lg font-semibold text-gray-900 mb-1 truncate leading-tight">
+                                            {listing.address.full}
+                                        </h3>
+                                        <p className="text-sm text-gray-500 mb-4 font-medium flex items-center gap-1">
+                                            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                                             </svg>
-                                            {listing.property.bedrooms}
-                                        </span>
-                                        <span className="flex items-center gap-1">
-                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" />
-                                            </svg>
-                                            {listing.property.bathsFull + (listing.property.bathsHalf * 0.5)}
-                                        </span>
-                                        <span className="flex items-center gap-1">
-                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-                                            </svg>
-                                            {listing.property.area?.toLocaleString()}
-                                        </span>
+                                            {listing.address.city}, {listing.address.state} {listing.address.postalCode}
+                                        </p>
+
+                                        <div className="flex items-center gap-4 text-sm text-gray-700 mb-4 border-y border-gray-100 py-3">
+                                            <span className="flex items-center gap-1.5 font-medium">
+                                                <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                                                </svg>
+                                                {listing.property.bedrooms} <span className="text-gray-400 font-normal">Beds</span>
+                                            </span>
+                                            <span className="flex items-center gap-1.5 font-medium">
+                                                <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                                </svg>
+                                                {listing.property.bathsFull + (listing.property.bathsHalf * 0.5)} <span className="text-gray-400 font-normal">Baths</span>
+                                            </span>
+                                            <span className="flex items-center gap-1.5 font-medium">
+                                                <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                                                </svg>
+                                                {listing.property.area?.toLocaleString()} <span className="text-gray-400 font-normal">SqFt</span>
+                                            </span>
+                                        </div>
                                     </div>
 
-                                    <div className="flex items-center justify-between text-xs text-gray-500">
-                                        <span className="badge badge-info">
+                                    <div className="flex items-center justify-between text-xs font-medium">
+                                        <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-md uppercase tracking-wide">
                                             {listing.property.type?.substring(0, 3).toUpperCase() || 'RES'}
                                         </span>
-                                        <span>
-                                            {listing.mls.daysOnMarket} days ago
+                                        <span className="text-gray-400">
+                                            {listing.mls.daysOnMarket} days on market
                                         </span>
                                     </div>
                                 </div>

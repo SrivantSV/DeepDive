@@ -458,30 +458,45 @@ export default function PropertyPage() {
                         </div>
 
                         {/* Quick Stats Grid */}
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-xl p-4 text-center">
-                                <div className="text-2xl font-bold text-blue-700">
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div className="glass-card p-4 rounded-xl flex flex-col items-center justify-center text-center hover:shadow-md transition-all group border-blue-100/50">
+                                <div className="mb-3 p-2.5 bg-blue-50 text-blue-600 rounded-full group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                                    <DollarSign className="w-5 h-5" />
+                                </div>
+                                <div className="text-xl font-bold text-slate-800">
                                     {safePricePerSqft(listing.listPrice, listing.property.area)}
                                 </div>
-                                <div className="text-sm text-blue-600/70">Price/sqft</div>
+                                <div className="text-xs font-semibold text-slate-400 uppercase tracking-wide mt-1">Price / SqFt</div>
                             </div>
-                            <div className="bg-gradient-to-br from-purple-50 to-purple-100/50 rounded-xl p-4 text-center">
-                                <div className="text-2xl font-bold text-purple-700">
+
+                            <div className="glass-card p-4 rounded-xl flex flex-col items-center justify-center text-center hover:shadow-md transition-all group border-purple-100/50">
+                                <div className="mb-3 p-2.5 bg-purple-50 text-purple-600 rounded-full group-hover:bg-purple-600 group-hover:text-white transition-colors">
+                                    <Calendar className="w-5 h-5" />
+                                </div>
+                                <div className="text-xl font-bold text-slate-800">
                                     {safeNumber(listing.mls.daysOnMarket)}
                                 </div>
-                                <div className="text-sm text-purple-600/70">Days on Market</div>
+                                <div className="text-xs font-semibold text-slate-400 uppercase tracking-wide mt-1">Days on Market</div>
                             </div>
-                            <div className="bg-gradient-to-br from-emerald-50 to-emerald-100/50 rounded-xl p-4 text-center">
-                                <div className="text-2xl font-bold text-emerald-700">
+
+                            <div className="glass-card p-4 rounded-xl flex flex-col items-center justify-center text-center hover:shadow-md transition-all group border-emerald-100/50">
+                                <div className="mb-3 p-2.5 bg-emerald-50 text-emerald-600 rounded-full group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                                    <MapPin className="w-5 h-5" />
+                                </div>
+                                <div className="text-xl font-bold text-slate-800">
                                     {safeLotSize(listing.property.lotSize)}
                                 </div>
-                                <div className="text-sm text-emerald-600/70">Lot Size</div>
+                                <div className="text-xs font-semibold text-slate-400 uppercase tracking-wide mt-1">Lot Size</div>
                             </div>
-                            <div className="bg-gradient-to-br from-amber-50 to-amber-100/50 rounded-xl p-4 text-center">
-                                <div className="text-2xl font-bold text-amber-700">
+
+                            <div className="glass-card p-4 rounded-xl flex flex-col items-center justify-center text-center hover:shadow-md transition-all group border-amber-100/50">
+                                <div className="mb-3 p-2.5 bg-amber-50 text-amber-600 rounded-full group-hover:bg-amber-600 group-hover:text-white transition-colors">
+                                    <Car className="w-5 h-5" />
+                                </div>
+                                <div className="text-xl font-bold text-slate-800">
                                     {safeNumber(listing.property.garageSpaces, '0')}
                                 </div>
-                                <div className="text-sm text-amber-600/70">Garage</div>
+                                <div className="text-xs font-semibold text-slate-400 uppercase tracking-wide mt-1">Garage</div>
                             </div>
                         </div>
 
