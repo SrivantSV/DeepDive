@@ -18,6 +18,7 @@ import {
     ArrowRight,
     SearchX,
     ImageIcon,
+    Home
 } from 'lucide-react'
 
 interface Listing {
@@ -127,128 +128,121 @@ function SearchContent() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-slate-50">
             {/* Header */}
-            <header className="bg-white border-b sticky top-0 z-50">
+            <header className="sticky top-0 z-50 glass border-b border-slate-200">
                 <div className="max-w-7xl mx-auto px-4 py-3">
                     <div className="flex items-center gap-6">
-                        <Link href="/" className="text-xl font-bold text-blue-600 flex items-center gap-2">
-                            <Search className="w-6 h-6" />
-                            HomeInsight AI
+                        <Link href="/" className="flex items-center gap-2 font-bold text-lg text-slate-800 hover:opacity-80 transition-opacity">
+                            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white">
+                                <Home size={16} strokeWidth={3} />
+                            </div>
+                            <span className="hidden sm:inline">HomeInsight AI</span>
                         </Link>
 
                         {/* Search Bar */}
-                        <div className="flex-1 max-w-xl relative">
+                        <div className="flex-1 max-w-xl relative group">
                             <input
                                 type="text"
                                 defaultValue={query}
-                                placeholder="Search by address, city, or ZIP"
-                                className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                placeholder="Address, City, ZIP..."
+                                className="w-full pl-10 pr-4 py-2.5 bg-slate-100 border-none rounded-xl text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500/50 focus:bg-white transition-all shadow-inner"
                                 onKeyDown={(e) => {
                                     if (e.key === 'Enter') {
                                         router.push(`/search?q=${encodeURIComponent((e.target as HTMLInputElement).value)}&type=${type}`)
                                     }
                                 }}
                             />
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                                </svg>
-                            </span>
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5 group-focus-within:text-blue-500 transition-colors" />
                         </div>
 
                         {/* Buy/Rent Toggle */}
-                        <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
-                            <button
-                                onClick={() => router.push(`/search?q=${query}&type=buy`)}
-                                className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${type === 'buy' ? 'bg-white shadow text-blue-600' : 'text-gray-600'
-                                    }`}
-                            >
-                                Buy
-                            </button>
-                            <button
-                                onClick={() => router.push(`/search?q=${query}&type=rent`)}
-                                className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${type === 'rent' ? 'bg-white shadow text-blue-600' : 'text-gray-600'
-                                    }`}
-                            >
-                                Rent
-                            </button>
+                        <div className="hidden sm:flex gap-1 bg-slate-100 rounded-lg p-1">
+                            {['buy', 'rent'].map((t) => (
+                                <button
+                                    key={t}
+                                    onClick={() => router.push(`/search?q=${query}&type=${t}`)}
+                                    className={`px-4 py-1.5 rounded-md text-sm font-semibold transition-all capitalize ${type === t
+                                        ? 'bg-white shadow-sm text-blue-600'
+                                        : 'text-slate-500 hover:text-slate-700'
+                                        }`}
+                                >
+                                    {t}
+                                </button>
+                            ))}
                         </div>
                     </div>
                 </div>
             </header>
 
             {/* Filters Bar */}
-            <div className="bg-white border-b py-3">
+            <div className="bg-white border-b border-slate-200 py-3 sticky top-[65px] z-40 shadow-sm">
                 <div className="max-w-7xl mx-auto px-4">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            {/* Quick Filters */}
-                            <select
-                                value={filters.minBeds}
-                                onChange={(e) => setFilters({ ...filters, minBeds: e.target.value })}
-                                className="px-3 py-2 border rounded-lg text-sm"
-                            >
-                                <option value="">Beds</option>
-                                <option value="1">1+ beds</option>
-                                <option value="2">2+ beds</option>
-                                <option value="3">3+ beds</option>
-                                <option value="4">4+ beds</option>
-                                <option value="5">5+ beds</option>
-                            </select>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div className="flex items-center gap-2 overflow-x-auto pb-2 sm:pb-0 hide-scrollbar">
+                            <div className="flex items-center gap-2 pr-4">
+                                <Filter size={16} className="text-slate-400" />
+                                <span className="text-sm font-medium text-slate-600">Filters:</span>
+                            </div>
 
-                            <select
-                                value={filters.maxPrice}
-                                onChange={(e) => setFilters({ ...filters, maxPrice: e.target.value })}
-                                className="px-3 py-2 border rounded-lg text-sm"
-                            >
-                                <option value="">Max Price</option>
-                                <option value="500000">$500K</option>
-                                <option value="750000">$750K</option>
-                                <option value="1000000">$1M</option>
-                                <option value="1500000">$1.5M</option>
-                                <option value="2000000">$2M</option>
-                                <option value="3000000">$3M+</option>
-                            </select>
+                            {['minBeds', 'maxPrice'].map((key) => (
+                                <select
+                                    key={key}
+                                    value={filters[key as keyof Filters]}
+                                    onChange={(e) => setFilters({ ...filters, [key]: e.target.value })}
+                                    className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 focus:outline-none focus:border-blue-500 cursor-pointer hover:border-slate-300 transition-colors"
+                                >
+                                    {key === 'minBeds' ? (
+                                        <>
+                                            <option value="">Any Beds</option>
+                                            <option value="1">1+ Beds</option>
+                                            <option value="2">2+ Beds</option>
+                                            <option value="3">3+ Beds</option>
+                                            <option value="4">4+ Beds</option>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <option value="">Any Price</option>
+                                            <option value="500000">$500k</option>
+                                            <option value="1000000">$1M</option>
+                                            <option value="1500000">$1.5M</option>
+                                            <option value="2500000">$2.5M</option>
+                                        </>
+                                    )}
+                                </select>
+                            ))}
 
                             <button
                                 onClick={applyFilters}
-                                className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700"
+                                className="px-5 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm active:scale-95"
                             >
-                                Apply
+                                Update
                             </button>
                         </div>
 
-                        <div className="flex items-center gap-3">
-                            {/* Sort */}
+                        <div className="flex items-center gap-3 border-l border-slate-100 pl-3">
                             <select
                                 value={sortBy}
                                 onChange={(e) => setSortBy(e.target.value)}
-                                className="px-3 py-2 border rounded-lg text-sm"
+                                className="px-3 py-2 bg-transparent text-sm font-medium text-slate-600 focus:outline-none cursor-pointer"
                             >
-                                <option value="newest">Newest</option>
+                                <option value="newest">Newest First</option>
                                 <option value="price_low">Price: Low to High</option>
                                 <option value="price_high">Price: High to Low</option>
-                                <option value="beds">Most Bedrooms</option>
                             </select>
 
-                            {/* View Toggle */}
-                            <div className="flex border rounded-lg overflow-hidden">
+                            <div className="flex bg-slate-100 rounded-lg p-1">
                                 <button
                                     onClick={() => setViewMode('grid')}
-                                    className={`p-2 ${viewMode === 'grid' ? 'bg-gray-100' : ''}`}
+                                    className={`p-1.5 rounded ${viewMode === 'grid' ? 'bg-white shadow text-blue-600' : 'text-slate-400'}`}
                                 >
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-                                    </svg>
+                                    <LayoutGrid size={18} />
                                 </button>
                                 <button
                                     onClick={() => setViewMode('list')}
-                                    className={`p-2 ${viewMode === 'list' ? 'bg-gray-100' : ''}`}
+                                    className={`p-1.5 rounded ${viewMode === 'list' ? 'bg-white shadow text-blue-600' : 'text-slate-400'}`}
                                 >
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                                    </svg>
+                                    <List size={18} />
                                 </button>
                             </div>
                         </div>
@@ -257,122 +251,125 @@ function SearchContent() {
             </div>
 
             {/* Results */}
-            <div className="max-w-7xl mx-auto px-4 py-6">
-                {/* Results Count */}
-                <div className="flex items-center justify-between mb-6">
-                    <h1 className="text-2xl font-bold text-gray-900">
-                        {query ? `Homes for ${type === 'rent' ? 'Rent' : 'Sale'} in ${query}` : 'All Listings'}
-                    </h1>
-                    <span className="text-gray-600">{listings.length} homes found</span>
+            <div className="max-w-7xl mx-auto px-4 py-8">
+                {/* Results Count & Heading */}
+                <div className="flex items-end justify-between mb-8">
+                    <div>
+                        <h1 className="text-3xl font-bold text-slate-900 tracking-tight">
+                            {query ? `Homes for ${type === 'rent' ? 'Rent' : 'Sale'} in ${query}` : 'All Listings'}
+                        </h1>
+                        <p className="text-slate-500 mt-1">Found {listings.length} properties matching your criteria</p>
+                    </div>
                 </div>
 
                 {loading ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                         {[...Array(6)].map((_, i) => (
-                            <div key={i} className="bg-white rounded-xl overflow-hidden shadow-sm animate-pulse">
-                                <div className="h-48 bg-gray-200" />
-                                <div className="p-4">
-                                    <div className="h-6 bg-gray-200 rounded w-24 mb-2" />
-                                    <div className="h-4 bg-gray-200 rounded w-full mb-2" />
-                                    <div className="h-4 bg-gray-200 rounded w-3/4" />
+                            <div key={i} className="bg-white rounded-2xl overflow-hidden border border-slate-100 shadow-sm">
+                                <div className="h-64 bg-slate-200 animate-pulse" />
+                                <div className="p-5 space-y-3">
+                                    <div className="h-6 bg-slate-200 rounded w-1/3 animate-pulse" />
+                                    <div className="h-4 bg-slate-200 rounded w-2/3 animate-pulse" />
+                                    <div className="h-4 bg-slate-200 rounded w-1/2 animate-pulse" />
                                 </div>
                             </div>
                         ))}
                     </div>
                 ) : listings.length === 0 ? (
-                    <div className="text-center py-20">
-                        <div className="flex justify-center mb-4">
-                            <SearchX className="w-16 h-16 text-gray-300" />
+                    <div className="text-center py-32 bg-white rounded-3xl border border-slate-100 shadow-sm">
+                        <div className="inline-flex justify-center items-center w-20 h-20 bg-slate-50 rounded-full mb-6">
+                            <SearchX className="w-10 h-10 text-slate-300" />
                         </div>
-                        <h2 className="text-xl font-semibold text-gray-900 mb-2">No listings found</h2>
-                        <p className="text-gray-600 mb-4">Try adjusting your search or filters</p>
-                        <Link href="/" className="text-blue-600 hover:underline">
-                            ← Back to home
-                        </Link>
+                        <h2 className="text-2xl font-bold text-slate-900 mb-2">No listings found</h2>
+                        <p className="text-slate-500 mb-8 max-w-sm mx-auto">We couldn't find any properties matching your current filters. Try removing some filters or searching a wider area.</p>
+                        <button
+                            onClick={() => { setFilters({ minPrice: '', maxPrice: '', minBeds: '', minBaths: '' }); fetchListings(); }}
+                            className="text-blue-600 font-medium hover:underline"
+                        >
+                            Clear all filters
+                        </button>
                     </div>
                 ) : (
-                    <div className={`grid gap-6 ${viewMode === 'grid'
+                    <div className={`grid gap-8 ${viewMode === 'grid'
                         ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
-                        : 'grid-cols-1'
+                        : 'grid-cols-1 max-w-4xl mx-auto'
                         }`}>
                         {listings.map((listing) => (
                             <Link
                                 key={listing.mlsId}
                                 href={`/property/${listing.mlsId}`}
-                                className={`bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-shadow group ${viewMode === 'list' ? 'flex' : ''
-                                    }`}
+                                className={`group relative bg-white rounded-2xl border border-slate-100 overflow-hidden transition-all duration-300 hover:shadow-xl hover:border-blue-100 hover:-translate-y-1 ${viewMode === 'list' ? 'flex flex-col sm:flex-row' : 'flex flex-col'}`}
                             >
-                                {/* Image */}
-                                <div className={`relative ${viewMode === 'list' ? 'w-72 flex-shrink-0' : 'h-48'}`}>
+                                {/* Image Container */}
+                                <div className={`relative overflow-hidden bg-slate-100 ${viewMode === 'list' ? 'w-full sm:w-80 h-64 sm:h-auto' : 'h-64'}`}>
                                     {listing.photos && listing.photos.length > 0 ? (
                                         <Image
                                             src={listing.photos[0]}
                                             alt={listing.address.full}
                                             fill
-                                            className="object-cover group-hover:scale-105 transition-transform duration-300"
+                                            className="object-cover transition-transform duration-700 group-hover:scale-105"
                                         />
                                     ) : (
-                                        <div className="absolute inset-0 bg-gray-200 flex items-center justify-center text-gray-400">
-                                            <ImageIcon className="w-12 h-12" />
+                                        <div className="absolute inset-0 flex items-center justify-center text-slate-300">
+                                            <ImageIcon size={48} />
                                         </div>
                                     )}
 
+                                    {/* Gradient Overlay */}
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-60" />
+
                                     {/* Status Badge */}
-                                    <div className="absolute top-3 left-3">
-                                        <span className={`px-2 py-1 rounded text-xs font-semibold ${listing.mls.status === 'Active'
-                                            ? 'bg-green-500 text-white'
-                                            : 'bg-yellow-500 text-white'
+                                    <div className="absolute top-4 left-4">
+                                        <span className={`px-2.5 py-1 rounded-full text-xs font-bold tracking-wide shadow-sm ${listing.mls.status === 'Active'
+                                            ? 'bg-emerald-500 text-white'
+                                            : 'bg-amber-500 text-white'
                                             }`}>
                                             {listing.mls.status}
                                         </span>
                                     </div>
 
-                                    {/* New Badge */}
-                                    {listing.mls.daysOnMarket <= 7 && (
-                                        <div className="absolute top-3 right-3">
-                                            <span className="px-2 py-1 bg-blue-500 text-white rounded text-xs font-semibold">
-                                                New
-                                            </span>
+                                    {/* AI Badge & Price (On Image for Grid) */}
+                                    <div className="absolute bottom-4 left-4 right-4 flex justify-between items-end">
+                                        <div className="glass px-3 py-1.5 rounded-lg flex items-center gap-1.5 text-xs font-semibold text-white backdrop-blur-md bg-black/30 border border-white/20">
+                                            <Sparkles size={12} className="text-yellow-300" />
+                                            AI Ready
                                         </div>
-                                    )}
-
-                                    {/* AI Badge */}
-                                    <div className="absolute top-4 right-4">
-                                        <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/95 backdrop-blur-md text-purple-700 rounded-lg text-xs font-bold shadow-lg shadow-purple-900/10 border border-purple-100">
-                                            <Sparkles className="w-3.5 h-3.5 fill-purple-600/20" />
-                                            AI Insights
-                                        </span>
+                                        <div className="text-white font-bold text-2xl drop-shadow-md">
+                                            {formatPrice(listing.listPrice)}
+                                        </div>
                                     </div>
                                 </div>
 
-                                {/* Details */}
-                                <div className="p-4 flex-1">
-                                    <div className="flex items-baseline gap-1 mb-1">
-                                        <span className="text-xl font-bold text-gray-900">
-                                            {formatPrice(listing.listPrice)}
-                                        </span>
-                                        {type === 'rent' && <span className="text-gray-500">/mo</span>}
+                                {/* Content Container */}
+                                <div className="p-5 flex flex-col flex-1">
+                                    <div className="flex justify-between items-start mb-2">
+                                        <h3 className="text-slate-900 font-semibold truncate pr-4 text-balance">
+                                            {listing.address.full}
+                                        </h3>
                                     </div>
 
-                                    <div className="flex items-center gap-2 text-gray-600 text-sm mb-2">
-                                        <span>{listing.property.bedrooms} bd</span>
-                                        <span>|</span>
-                                        <span>{listing.property.bathsFull + (listing.property.bathsHalf * 0.5)} ba</span>
-                                        <span>|</span>
-                                        <span>{listing.property.area?.toLocaleString()} sqft</span>
-                                    </div>
-
-                                    <p className="text-gray-500 text-sm truncate">
-                                        {listing.address.full}
-                                    </p>
-
-                                    {viewMode === 'list' && (
-                                        <div className="flex items-center gap-4 mt-3 pt-3 border-t text-sm text-gray-500">
-                                            <span>Built {listing.property.yearBuilt}</span>
-                                            <span>{listing.property.type}</span>
-                                            <span>{listing.mls.daysOnMarket} days on market</span>
+                                    <div className="flex items-center gap-4 text-slate-600 text-sm mb-4">
+                                        <div className="flex items-center gap-1.5">
+                                            <BedDouble size={16} className="text-slate-400" />
+                                            <span className="font-medium">{listing.property.bedrooms}</span>
                                         </div>
-                                    )}
+                                        <div className="flex items-center gap-1.5">
+                                            <Bath size={16} className="text-slate-400" />
+                                            <span className="font-medium">{listing.property.bathsFull}</span>
+                                        </div>
+                                        <div className="flex items-center gap-1.5">
+                                            <Ruler size={16} className="text-slate-400" />
+                                            <span className="font-medium">{listing.property.area?.toLocaleString()}</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-auto pt-4 border-t border-slate-50 flex justify-between items-center text-xs text-slate-500 font-medium">
+                                        <div className="flex items-center gap-1">
+                                            <div className="w-2 h-2 rounded-full bg-blue-500" />
+                                            <span>{listing.property.type}</span>
+                                        </div>
+                                        <span>{listing.mls.daysOnMarket} days ago</span>
+                                    </div>
                                 </div>
                             </Link>
                         ))}
@@ -385,7 +382,7 @@ function SearchContent() {
 
 export default function SearchPage() {
     return (
-        <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center">Loading...</div>}>
+        <Suspense fallback={<div className="min-h-screen bg-slate-50 flex items-center justify-center text-slate-500">Loading listings...</div>}>
             <SearchContent />
         </Suspense>
     )

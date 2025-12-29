@@ -5,21 +5,20 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
   Search,
-  Brain,
   Database,
   TrendingUp,
   ShieldAlert,
+  Sparkles,
   ArrowRight,
-  Eye,
-  MessageCircle,
   MapPin,
-  Sparkles
+  Home
 } from 'lucide-react'
 
 export default function HomePage() {
   const router = useRouter()
   const [searchQuery, setSearchQuery] = useState('')
   const [searchType, setSearchType] = useState<'buy' | 'rent'>('buy')
+  const [isFocused, setIsFocused] = useState(false)
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
@@ -30,121 +29,129 @@ export default function HomePage() {
 
   const features = [
     {
-      icon: <Sparkles className="w-8 h-8 text-purple-600" />,
-      title: 'AI-Powered Insights',
-      description: 'Ask any question about a property and get instant, detailed answers',
+      icon: <Sparkles className="w-6 h-6 text-indigo-500" />,
+      title: 'AI Intelligence',
+      description: 'Ask deep questions about any property and get instant, grounded answers.',
     },
     {
-      icon: <Database className="w-8 h-8 text-blue-600" />,
-      title: 'Deep Data Analysis',
-      description: '33 data sources analyzed including schools, crime, flood zones, and more',
+      icon: <Database className="w-6 h-6 text-blue-500" />,
+      title: '33+ Data Sources',
+      description: 'We aggregate flood zones, crime stats, permit history, and school ratings.',
     },
     {
-      icon: <TrendingUp className="w-8 h-8 text-green-600" />,
-      title: 'Investment Analysis',
-      description: 'Get ROI, cap rate, and cash flow projections for any property',
+      icon: <TrendingUp className="w-6 h-6 text-emerald-500" />,
+      title: 'Investment ROI',
+      description: 'Calculates Cap Rate, Cash-on-Cash, and rental yield automatically.',
     },
     {
-      icon: <ShieldAlert className="w-8 h-8 text-red-600" />,
-      title: 'Red Flag Detection',
-      description: 'Automatically identify potential issues before you make an offer',
+      icon: <ShieldAlert className="w-6 h-6 text-rose-500" />,
+      title: 'Risk Detection',
+      description: 'Proactively flags wildfires, noise pollution, and negative market trends.',
     },
   ]
 
   const quickCities = ['Danville, CA', 'San Ramon, CA', 'Pleasanton, CA', 'Dublin, CA']
 
-  const sampleQuestions = [
-    'Is this a good investment?',
-    'Is this property overpriced?',
-    'How are the schools nearby?',
-    'What is the flood risk?',
-    'What would my monthly cost be?',
-    'Any red flags I should know about?',
-    'How is the commute to San Francisco?',
-    'Is this neighborhood safe?',
-    'What do neighbors say about this area?',
-  ]
-
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-slate-50 selection:bg-blue-100 selection:text-blue-900">
+
+      {/* Navbar Overlay */}
+      <nav className="absolute top-0 w-full z-50 px-6 py-6">
+        <div className="max-w-7xl mx-auto flex justify-between items-center">
+          <div className="flex items-center gap-2 font-bold text-xl text-slate-800">
+            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white">
+              <Home size={18} strokeWidth={3} />
+            </div>
+            HomeInsight AI
+          </div>
+          <div className="hidden md:flex gap-6 text-sm font-medium text-slate-600">
+            <Link href="/search" className="hover:text-blue-600 transition-colors">Browse</Link>
+            <Link href="#" className="hover:text-blue-600 transition-colors">How it Works</Link>
+            <Link href="#" className="hover:text-blue-600 transition-colors">Pricing</Link>
+          </div>
+          <button className="bg-slate-900 text-white px-5 py-2 rounded-full text-sm font-medium hover:bg-slate-800 transition-colors">
+            Sign In
+          </button>
+        </div>
+      </nav>
+
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-blue-900 via-blue-800 to-blue-900 text-white overflow-hidden">
-        {/* Background Pattern */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute inset-0" style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-          }} />
+      <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden">
+
+        {/* Abstract Background Shapes */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full max-w-7xl -z-10 pointer-events-none">
+          <div className="absolute top-20 left-10 w-72 h-72 bg-blue-400/20 rounded-full blur-3xl animate-pulse-soft" />
+          <div className="absolute top-40 right-10 w-96 h-96 bg-indigo-400/20 rounded-full blur-3xl animate-pulse-soft" style={{ animationDelay: '1s' }} />
         </div>
 
-        <div className="relative max-w-6xl mx-auto px-4 py-20 md:py-32">
-          {/* Logo/Brand */}
-          <div className="text-center mb-12">
-            <h1 className="text-5xl md:text-6xl font-bold mb-4 flex items-center justify-center gap-3">
-              <Search className="w-12 h-12 md:w-16 md:h-16 text-blue-300" />
-              HomeInsight AI
-            </h1>
-            <p className="text-xl md:text-2xl text-blue-200 max-w-2xl mx-auto">
-              The smartest way to find your next home. AI-powered insights on every property.
-            </p>
+        <div className="max-w-4xl mx-auto px-4 text-center">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-100 text-blue-700 text-xs font-semibold mb-8 animate-fade-in opacity-0" style={{ animationDelay: '0.1s' }}>
+            <Sparkles size={12} />
+            <span>New: Real-time Streaming AI Chat</span>
           </div>
 
-          {/* Search Box */}
-          <div className="max-w-3xl mx-auto">
-            {/* Buy/Rent Toggle */}
-            <div className="flex justify-center gap-2 mb-4">
+          <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-slate-900 mb-6 animate-fade-in opacity-0" style={{ animationDelay: '0.2s' }}>
+            Real estate search, <br />
+            <span className="text-gradient">reimagined by AI.</span>
+          </h1>
+
+          <p className="text-xl text-slate-500 mb-12 max-w-2xl mx-auto leading-relaxed animate-fade-in opacity-0" style={{ animationDelay: '0.3s' }}>
+            Stop opening 20 tabs. Get an instant, comprehensive deep-dive validation on any property in seconds.
+          </p>
+
+          {/* Search Container */}
+          <div className="relative max-w-2xl mx-auto animate-fade-in opacity-0" style={{ animationDelay: '0.4s' }}>
+
+            {/* Search Type Toggles */}
+            <div className="absolute -top-12 left-0 flex gap-4">
               <button
                 onClick={() => setSearchType('buy')}
-                className={`px-6 py-2 rounded-full font-semibold transition-all ${searchType === 'buy'
-                  ? 'bg-white text-blue-900'
-                  : 'bg-blue-800 text-white hover:bg-blue-700'
-                  }`}
+                className={`text-sm font-medium pb-1 transition-colors border-b-2 ${searchType === 'buy' ? 'text-blue-600 border-blue-600' : 'text-slate-400 border-transparent hover:text-slate-600'}`}
               >
                 Buy
               </button>
               <button
                 onClick={() => setSearchType('rent')}
-                className={`px-6 py-2 rounded-full font-semibold transition-all ${searchType === 'rent'
-                  ? 'bg-white text-blue-900'
-                  : 'bg-blue-800 text-white hover:bg-blue-700'
-                  }`}
+                className={`text-sm font-medium pb-1 transition-colors border-b-2 ${searchType === 'rent' ? 'text-blue-600 border-blue-600' : 'text-slate-400 border-transparent hover:text-slate-600'}`}
               >
                 Rent
               </button>
             </div>
 
-            {/* Search Input */}
-            <form onSubmit={handleSearch}>
-              <div className="flex flex-col md:flex-row gap-2 bg-white rounded-xl p-2 shadow-2xl">
-                <div className="flex-1 flex items-center">
-                  <span className="pl-4 text-gray-400">
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                  </span>
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Enter an address, neighborhood, city, or ZIP code"
-                    className="flex-1 px-4 py-4 text-lg text-gray-800 focus:outline-none rounded-lg"
-                  />
-                </div>
+            <form onSubmit={handleSearch} className={`relative group transition-all duration-300 ${isFocused ? 'scale-[1.02]' : ''}`}>
+              <div className={`
+                absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-2xl opacity-20 blur transition duration-500
+                ${isFocused ? 'opacity-40' : 'opacity-20'}
+              `} />
+
+              <div className="relative bg-white rounded-2xl shadow-xl flex items-center p-2">
+                <MapPin className="ml-4 text-slate-400 w-6 h-6" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onFocus={() => setIsFocused(true)}
+                  onBlur={() => setIsFocused(false)}
+                  placeholder="Address, neighborhood, city, or ZIP..."
+                  className="flex-1 w-full p-4 bg-transparent outline-none text-lg text-slate-900 placeholder:text-slate-400"
+                />
                 <button
                   type="submit"
-                  className="px-8 py-4 bg-blue-600 text-white rounded-lg font-semibold text-lg hover:bg-blue-700 transition-colors"
+                  className="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-xl transition-all duration-200 active:scale-95 flex items-center gap-2 font-medium pr-5"
                 >
+                  <Search size={20} />
                   Search
                 </button>
               </div>
             </form>
 
-            {/* Quick Links */}
-            <div className="flex flex-wrap justify-center gap-2 mt-6">
+            <div className="mt-4 flex flex-wrap gap-2 justify-center text-sm text-slate-500">
+              <span>Try:</span>
               {quickCities.map((city) => (
                 <Link
                   key={city}
                   href={`/search?q=${encodeURIComponent(city)}`}
-                  className="px-4 py-2 bg-blue-800/50 text-white rounded-full text-sm hover:bg-blue-700/50 transition-colors"
+                  className="hover:text-blue-600 hover:underline transition-colors"
                 >
                   {city}
                 </Link>
@@ -154,139 +161,47 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Features Section */}
-      <section className="py-20 bg-gray-50">
-        <div className="max-w-6xl mx-auto px-4">
-          <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-4">
-            Why HomeInsight AI?
-          </h2>
-          <p className="text-xl text-gray-600 text-center mb-12 max-w-2xl mx-auto">
-            We analyze 33 data sources to give you the most comprehensive property insights available.
-          </p>
+      {/* Feature Grid */}
+      <section className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold text-slate-900">Why trust HomeInsight?</h2>
+            <p className="mt-4 text-slate-500 max-w-2xl mx-auto">
+              We go beyond basic listing data to provide the deep due diligence typically reserved for institutional investors.
+            </p>
+          </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {features.map((feature, index) => (
               <div
                 key={index}
-                className="bg-white rounded-xl p-6 shadow-sm hover:shadow-lg transition-shadow"
+                className="group p-6 bg-slate-50 rounded-2xl border border-slate-100 hover:bg-white hover:border-blue-100 hover:shadow-xl hover:shadow-blue-900/5 transition-all duration-300"
               >
-                <div className="text-4xl mb-4">{feature.icon}</div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">{feature.title}</h3>
-                <p className="text-gray-600">{feature.description}</p>
+                <div className="w-12 h-12 bg-white rounded-xl border border-slate-200 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300 shadow-sm">
+                  {feature.icon}
+                </div>
+                <h3 className="text-lg font-semibold text-slate-900 mb-2">{feature.title}</h3>
+                <p className="text-slate-500 text-sm leading-relaxed">{feature.description}</p>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* How It Works */}
-      <section className="py-20">
-        <div className="max-w-6xl mx-auto px-4">
-          <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-900 mb-12">
-            How It Works
-          </h2>
-
-          <div className="flex flex-col md:flex-row justify-center items-center gap-8 md:gap-16">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
-                1
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Search</h3>
-              <p className="text-gray-600 max-w-xs">
-                Enter any address, city, or ZIP code to find properties
-              </p>
-            </div>
-
-            <div className="hidden md:block text-gray-300 text-4xl">→</div>
-
-            <div className="text-center">
-              <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
-                2
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Explore</h3>
-              <p className="text-gray-600 max-w-xs">
-                View detailed property information and AI-generated insights
-              </p>
-            </div>
-
-            <div className="hidden md:block text-gray-300 text-4xl">→</div>
-
-            <div className="text-center">
-              <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
-                3
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Ask</h3>
-              <p className="text-gray-600 max-w-xs">
-                Chat with our AI to get answers to any question about the property
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Sample Questions */}
-      <section className="py-20 bg-gradient-to-br from-gray-900 to-gray-800 text-white">
-        <div className="max-w-6xl mx-auto px-4">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-4">
-            Ask Anything
-          </h2>
-          <p className="text-xl text-gray-400 text-center mb-12">
-            Our AI can answer questions like:
-          </p>
-
-          <div className="flex flex-wrap justify-center gap-3 max-w-4xl mx-auto">
-            {sampleQuestions.map((question, index) => (
-              <span
-                key={index}
-                className="px-4 py-2 bg-gray-700/50 text-gray-300 rounded-full text-sm hover:bg-gray-700 transition-colors cursor-default"
-              >
-                &ldquo;{question}&rdquo;
-              </span>
             ))}
           </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-gray-400 py-12">
-        <div className="max-w-6xl mx-auto px-4">
-          <div className="grid md:grid-cols-4 gap-8 mb-8">
-            <div>
-              <h3 className="text-white font-bold text-lg mb-4 flex items-center gap-2">
-                <Search className="w-5 h-5 text-blue-400" />
-                HomeInsight AI
-              </h3>
-              <p className="text-sm">
-                The smartest way to find your next home.
-              </p>
+      <footer className="bg-slate-900 text-slate-400 py-12 border-t border-slate-800">
+        <div className="max-w-7xl mx-auto px-4 text-center">
+          <div className="flex items-center justify-center gap-2 mb-4 text-slate-100 font-bold text-xl">
+            <div className="w-6 h-6 bg-blue-600 rounded flex items-center justify-center text-white">
+              <Home size={14} strokeWidth={3} />
             </div>
-            <div>
-              <h4 className="text-white font-semibold mb-4">Search</h4>
-              <ul className="space-y-2 text-sm">
-                <li><Link href="/search?type=buy" className="hover:text-white">Buy</Link></li>
-                <li><Link href="/search?type=rent" className="hover:text-white">Rent</Link></li>
-                <li><Link href="/search" className="hover:text-white">All Listings</Link></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="text-white font-semibold mb-4">Resources</h4>
-              <ul className="space-y-2 text-sm">
-                <li><Link href="#" className="hover:text-white">Mortgage Calculator</Link></li>
-                <li><Link href="#" className="hover:text-white">Investment Guide</Link></li>
-                <li><Link href="#" className="hover:text-white">Blog</Link></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="text-white font-semibold mb-4">Company</h4>
-              <ul className="space-y-2 text-sm">
-                <li><Link href="#" className="hover:text-white">About</Link></li>
-                <li><Link href="#" className="hover:text-white">Contact</Link></li>
-                <li><Link href="#" className="hover:text-white">Privacy</Link></li>
-              </ul>
-            </div>
+            HomeInsight AI
           </div>
-          <div className="border-t border-gray-800 pt-8 text-center text-sm">
-            © 2024 HomeInsight AI. All rights reserved.
+          <p className="text-sm mb-8">© 2025 HomeInsight AI. All rights reserved.</p>
+          <div className="flex justify-center gap-6 text-sm">
+            <Link href="#" className="hover:text-white transition-colors">Privacy</Link>
+            <Link href="#" className="hover:text-white transition-colors">Terms</Link>
+            <Link href="#" className="hover:text-white transition-colors">Contact</Link>
           </div>
         </div>
       </footer>
