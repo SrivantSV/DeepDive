@@ -70,213 +70,15 @@ interface InvestmentResults {
 interface Rule {
     id: string
     originalText: string
-    metric: string
-    operator: string
-    value: number
-    unit: string | null
     status: 'pass' | 'fail' | 'unknown'
-    actualValue: number | null
-    displayText: string
-    displayValue: string
+    reason: string
+    actualValue: string
+    confidence: 'high' | 'medium' | 'low'
+    explanation?: string
 }
 
-// --- Metric Keywords for Rule Parsing ---
-
-const METRIC_KEYWORDS: Record<string, string[]> = {
-    capRate: ['cap rate', 'cap-rate', 'cap_rate', 'capitalization rate'],
-    onePercentRule: ['1% rule', 'one percent rule', 'one-percent-rule', '1 percent'],
-    dscr: ['dscr', 'debt service coverage', 'debt service coverage ratio'],
-    cashOnCash: ['cash on cash', 'cash-on-cash', 'cash on cash return', 'coc'],
-    monthlyRent: ['monthly rent', 'monthly revenue', 'monthly income', 'rent/month', 'rent'],
-    monthlyNOI: ['monthly noi', 'monthly net operating income', 'monthly cash flow', 'cash flow'],
-    annualNOI: ['annual noi', 'annual net operating income', 'annual cash flow', 'noi'],
-    pricePerSqft: ['price per sqft', 'price/sqft', 'cost per square foot', '$/sqft'],
-}
-
-const METRIC_LABELS: Record<string, string> = {
-    capRate: 'CAP RATE',
-    onePercentRule: '1% RULE',
-    dscr: 'DSCR',
-    cashOnCash: 'CASH-ON-CASH',
-    monthlyRent: 'MONTHLY RENT',
-    monthlyNOI: 'MONTHLY CASH FLOW',
-    annualNOI: 'ANNUAL NOI',
-    pricePerSqft: 'PRICE/SQFT',
-}
-
-// --- Rule Parsing Function ---
-
-function parseRule(userInput: string): { rule?: Partial<Rule>; error?: string } {
-    const input = userInput.toLowerCase().trim()
-
-    // Step 1: Identify metric
-    let metric: string | null = null
-    for (const [metricKey, keywords] of Object.entries(METRIC_KEYWORDS)) {
-        if (keywords.some(kw => input.includes(kw))) {
-            metric = metricKey
-            break
-        }
-    }
-
-    if (!metric) {
-        return { error: "Metric not recognized. Try: cap rate, DSCR, cash flow, 1% rule, etc." }
-    }
-
-    // Step 2: Identify operator
-    let operator: string | null = null
-    if (input.includes('>=') || input.includes('≥')) operator = '>='
-    else if (input.includes('<=') || input.includes('≤')) operator = '<='
-    else if (input.includes('!=') || input.includes('≠')) operator = '!='
-    else if (input.includes('>')) operator = '>'
-    else if (input.includes('<')) operator = '<'
-    else if (input.includes('=')) operator = '='
-
-    if (!operator) {
-        return { error: "Operator not found. Use: > < >= <= = or !=" }
-    }
-
-    // Step 3: Extract number
-    const numberMatch = input.match(/(\d+\.?\d*)/g)
-    if (!numberMatch || numberMatch.length === 0) {
-        return { error: "No number found. Example: 'cap rate > 5'" }
-    }
-
-    // Take the last number (usually the threshold value)
-    const value = parseFloat(numberMatch[numberMatch.length - 1])
-
-    // Step 4: Identify unit
-    let unit: string | null = null
-    if (input.includes('%')) unit = '%'
-    else if (input.includes('$')) unit = '$'
-    else if (input.includes('x')) unit = 'x'
-
-    // Format display text
-    const operatorSymbol: Record<string, string> = {
-        '>': '>',
-        '<': '<',
-        '>=': '≥',
-        '<=': '≤',
-        '=': '=',
-        '!=': '≠',
-    }
-
-    const displayText = `${METRIC_LABELS[metric] || metric.toUpperCase()} ${operatorSymbol[operator] || operator} ${unit === '$' ? '$' : ''}${value}${unit === '%' ? '%' : unit === 'x' ? 'x' : ''}`
-
-    return {
-        rule: {
-            originalText: userInput,
-            metric,
-            operator,
-            value,
-            unit,
-            displayText,
-        }
-    }
-}
-
-// --- Rule Evaluation Function ---
-
-function evaluateRule(
-    rule: Partial<Rule>,
-    results: InvestmentResults,
-    inputs: InvestmentInputs
-): Rule {
-    // Get actual value based on metric
-    let actualValue: number | null = null
-
-    switch (rule.metric) {
-        case 'capRate':
-            actualValue = results.capRate.value
-            break
-        case 'onePercentRule':
-            actualValue = results.onePercentRule.value
-            break
-        case 'dscr':
-            actualValue = results.dscr.value
-            break
-        case 'cashOnCash':
-            actualValue = results.cashOnCash.value
-            break
-        case 'monthlyRent':
-            actualValue = inputs.monthlyRent
-            break
-        case 'monthlyNOI':
-            actualValue = results.noi / 12
-            break
-        case 'annualNOI':
-            actualValue = results.noi
-            break
-        case 'pricePerSqft':
-            // Not available without sqft data
-            actualValue = null
-            break
-    }
-
-    if (actualValue === null) {
-        return {
-            id: rule.id || `rule_${Date.now()}`,
-            originalText: rule.originalText || '',
-            metric: rule.metric || '',
-            operator: rule.operator || '>',
-            value: rule.value || 0,
-            unit: rule.unit || null,
-            status: 'unknown',
-            actualValue: null,
-            displayText: rule.displayText || '',
-            displayValue: 'N/A',
-        }
-    }
-
-    // Evaluate based on operator
-    let passed = false
-    const threshold = rule.value || 0
-
-    switch (rule.operator) {
-        case '>':
-            passed = actualValue > threshold
-            break
-        case '<':
-            passed = actualValue < threshold
-            break
-        case '>=':
-            passed = actualValue >= threshold
-            break
-        case '<=':
-            passed = actualValue <= threshold
-            break
-        case '=':
-            passed = Math.abs(actualValue - threshold) < 0.01
-            break
-        case '!=':
-            passed = Math.abs(actualValue - threshold) >= 0.01
-            break
-    }
-
-    // Format display value
-    let displayValue = ''
-    if (['capRate', 'onePercentRule', 'cashOnCash'].includes(rule.metric || '')) {
-        displayValue = `${actualValue.toFixed(2)}%`
-    } else if (rule.metric === 'dscr') {
-        displayValue = `${actualValue.toFixed(2)}x`
-    } else if (['monthlyRent', 'monthlyNOI', 'annualNOI'].includes(rule.metric || '')) {
-        displayValue = `$${Math.round(actualValue).toLocaleString()}`
-    } else {
-        displayValue = actualValue.toFixed(2)
-    }
-
-    return {
-        id: rule.id || `rule_${Date.now()}`,
-        originalText: rule.originalText || '',
-        metric: rule.metric || '',
-        operator: rule.operator || '>',
-        value: rule.value || 0,
-        unit: rule.unit || null,
-        status: passed ? 'pass' : 'fail',
-        actualValue,
-        displayText: rule.displayText || '',
-        displayValue,
-    }
-}
+// --- AI-Powered Rule Evaluation (replaced hardcoded parsing) ---
+// Old METRIC_KEYWORDS and parsing functions removed in favor of AI evaluation
 
 // --- Calculation Functions ---
 
@@ -477,6 +279,7 @@ function InvestorCheckContent() {
     const [rules, setRules] = useState<Rule[]>([])
     const [ruleInput, setRuleInput] = useState('')
     const [ruleError, setRuleError] = useState<string | null>(null)
+    const [ruleLoading, setRuleLoading] = useState(false)
 
     // Investment inputs with defaults
     const [inputs, setInputs] = useState<InvestmentInputs>({
@@ -540,21 +343,57 @@ function InvestorCheckContent() {
         setInputs(prev => ({ ...prev, [key]: value }))
     }
 
-    // Rule management functions
-    const addRule = () => {
-        if (!ruleInput.trim() || !results) return
+    // AI-powered rule evaluation
+    const addRule = async () => {
+        if (!ruleInput.trim() || !results || ruleLoading) return
 
-        const parsed = parseRule(ruleInput)
-        if (parsed.error) {
-            setRuleError(parsed.error)
-            return
-        }
+        setRuleLoading(true)
+        setRuleError(null)
 
-        if (parsed.rule) {
-            const evaluated = evaluateRule(parsed.rule, results, inputs)
-            setRules(prev => [...prev, evaluated])
+        try {
+            const response = await fetch('/api/evaluate-rule', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    rule: ruleInput,
+                    propertyData: {
+                        address: property?.address || query || '',
+                        purchasePrice: inputs.purchasePrice,
+                        monthlyRent: inputs.monthlyRent,
+                        capRate: results.capRate.value,
+                        onePercentRule: results.onePercentRule.value,
+                        dscr: results.dscr.value,
+                        cashOnCash: results.cashOnCash.value,
+                        noi: results.noi,
+                        monthlyPayment: results.monthlyPayment,
+                    },
+                }),
+            })
+
+            const data = await response.json()
+
+            if (data.error) {
+                setRuleError(data.error)
+                return
+            }
+
+            const newRule: Rule = {
+                id: `rule_${Date.now()}`,
+                originalText: ruleInput,
+                status: data.pass ? 'pass' : 'fail',
+                reason: data.reason || '',
+                actualValue: data.actualValue || '',
+                confidence: data.confidence || 'medium',
+                explanation: data.explanation,
+            }
+
+            setRules(prev => [...prev, newRule])
             setRuleInput('')
-            setRuleError(null)
+        } catch (error) {
+            console.error('Error evaluating rule:', error)
+            setRuleError('Failed to evaluate rule. Please try again.')
+        } finally {
+            setRuleLoading(false)
         }
     }
 
@@ -566,13 +405,6 @@ function InvestorCheckContent() {
         setRules([])
         setRuleError(null)
     }
-
-    // Re-evaluate rules when results change
-    useEffect(() => {
-        if (results && rules.length > 0) {
-            setRules(prev => prev.map(rule => evaluateRule(rule, results, inputs)))
-        }
-    }, [results])
 
     if (!query) {
         return (
@@ -768,7 +600,7 @@ function InvestorCheckContent() {
                     <div className="bg-white rounded-2xl border border-slate-200 p-6 mb-8 shadow-sm">
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                                📋 Dynamic Rule Checker
+                                🤖 AI-Powered Rule Checker
                             </h3>
                             {rules.length > 0 && (
                                 <button
@@ -789,16 +621,21 @@ function InvestorCheckContent() {
                                     setRuleInput(e.target.value)
                                     setRuleError(null)
                                 }}
-                                onKeyDown={(e) => e.key === 'Enter' && addRule()}
-                                placeholder="e.g. cap rate > 5% or DSCR >= 1.25"
+                                onKeyDown={(e) => e.key === 'Enter' && !ruleLoading && addRule()}
+                                placeholder="Type any criteria: cap rate > 5%, good appreciation potential, stable employer base..."
                                 className="flex-1 rounded-xl border border-slate-200 px-4 py-3 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all text-sm"
+                                disabled={ruleLoading}
                             />
                             <button
                                 onClick={addRule}
-                                disabled={!ruleInput.trim()}
-                                className="px-5 py-3 bg-emerald-600 text-white font-semibold rounded-xl hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                disabled={!ruleInput.trim() || ruleLoading}
+                                className="px-5 py-3 bg-emerald-600 text-white font-semibold rounded-xl hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-w-[80px]"
                             >
-                                Add
+                                {ruleLoading ? (
+                                    <Loader2 className="w-5 h-5 animate-spin mx-auto" />
+                                ) : (
+                                    'Add'
+                                )}
                             </button>
                         </div>
 
@@ -812,46 +649,57 @@ function InvestorCheckContent() {
 
                         {/* Rules List */}
                         {rules.length > 0 ? (
-                            <div className="space-y-2 mb-4">
+                            <div className="space-y-3 mb-4">
                                 {rules.map((rule) => (
                                     <div
                                         key={rule.id}
-                                        className={`flex items-center justify-between p-3 rounded-xl border-l-4 ${rule.status === 'pass'
+                                        className={`p-4 rounded-xl border-l-4 ${rule.status === 'pass'
                                                 ? 'bg-emerald-50 border-emerald-500'
                                                 : rule.status === 'fail'
                                                     ? 'bg-red-50 border-red-500'
                                                     : 'bg-slate-50 border-slate-300'
                                             }`}
                                     >
-                                        <div className="flex items-center gap-3">
-                                            {rule.status === 'pass' ? (
-                                                <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-                                            ) : rule.status === 'fail' ? (
-                                                <XCircle className="w-5 h-5 text-red-600" />
-                                            ) : (
-                                                <AlertTriangle className="w-5 h-5 text-slate-400" />
-                                            )}
-                                            <span className={`font-medium ${rule.status === 'pass' ? 'text-emerald-800' :
-                                                    rule.status === 'fail' ? 'text-red-800' : 'text-slate-600'
-                                                }`}>
-                                                {rule.displayText}
-                                            </span>
-                                        </div>
-                                        <div className="flex items-center gap-3">
-                                            <span className={`px-3 py-1 rounded-lg text-sm font-bold ${rule.status === 'pass'
-                                                    ? 'bg-emerald-600 text-white'
-                                                    : rule.status === 'fail'
-                                                        ? 'bg-red-600 text-white'
-                                                        : 'bg-slate-400 text-white'
-                                                }`}>
-                                                {rule.status === 'pass' ? 'PASS ✓' : rule.status === 'fail' ? 'FAIL ✗' : 'N/A'}
-                                            </span>
-                                            <span className="text-sm text-slate-600 font-mono">
-                                                {rule.displayValue}
-                                            </span>
+                                        <div className="flex items-start justify-between">
+                                            <div className="flex items-start gap-3 flex-1">
+                                                {rule.status === 'pass' ? (
+                                                    <CheckCircle2 className="w-5 h-5 text-emerald-600 mt-0.5" />
+                                                ) : rule.status === 'fail' ? (
+                                                    <XCircle className="w-5 h-5 text-red-600 mt-0.5" />
+                                                ) : (
+                                                    <AlertTriangle className="w-5 h-5 text-slate-400 mt-0.5" />
+                                                )}
+                                                <div className="flex-1">
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <span className={`font-semibold ${rule.status === 'pass' ? 'text-emerald-800' :
+                                                                rule.status === 'fail' ? 'text-red-800' : 'text-slate-600'
+                                                            }`}>
+                                                            {rule.originalText}
+                                                        </span>
+                                                        <span className={`px-2 py-0.5 rounded text-xs font-bold ${rule.status === 'pass'
+                                                                ? 'bg-emerald-600 text-white'
+                                                                : rule.status === 'fail'
+                                                                    ? 'bg-red-600 text-white'
+                                                                    : 'bg-slate-400 text-white'
+                                                            }`}>
+                                                            {rule.status === 'pass' ? 'PASS ✓' : rule.status === 'fail' ? 'FAIL ✗' : 'N/A'}
+                                                        </span>
+                                                    </div>
+                                                    <div className="text-sm text-slate-600">
+                                                        <span className="font-medium">{rule.actualValue}</span>
+                                                        {rule.reason && <span className="mx-1">—</span>}
+                                                        <span>{rule.reason}</span>
+                                                    </div>
+                                                    {rule.explanation && (
+                                                        <div className="text-xs text-slate-500 mt-1">
+                                                            {rule.explanation}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
                                             <button
                                                 onClick={() => removeRule(rule.id)}
-                                                className="text-slate-400 hover:text-red-600 transition-colors"
+                                                className="text-slate-400 hover:text-red-600 transition-colors ml-2"
                                             >
                                                 <XCircle className="w-4 h-4" />
                                             </button>
@@ -860,10 +708,11 @@ function InvestorCheckContent() {
                                 ))}
                             </div>
                         ) : (
-                            <div className="text-center py-6 text-slate-500 text-sm">
-                                No rules yet. Add your investment criteria above.
-                                <div className="mt-2 text-xs text-slate-400">
-                                    Examples: "cap rate &gt; 5%", "DSCR &gt;= 1.25", "cash flow &gt; $500"
+                            <div className="text-center py-8 text-slate-500 text-sm">
+                                <p>No rules yet. Add any investment criteria in natural language.</p>
+                                <div className="mt-3 text-xs text-slate-400 space-y-1">
+                                    <p>🎯 "cap rate &gt; 5%" • "DSCR &gt;= 1.25" • "cash flow &gt; $500"</p>
+                                    <p>🏘️ "good appreciation potential" • "stable employer base" • "near good schools"</p>
                                 </div>
                             </div>
                         )}
@@ -879,10 +728,10 @@ function InvestorCheckContent() {
                                         <div className="w-32 h-2 bg-slate-200 rounded-full overflow-hidden">
                                             <div
                                                 className={`h-full rounded-full transition-all ${rules.filter(r => r.status === 'pass').length / rules.length >= 0.7
-                                                        ? 'bg-emerald-500'
-                                                        : rules.filter(r => r.status === 'pass').length / rules.length >= 0.4
-                                                            ? 'bg-amber-500'
-                                                            : 'bg-red-500'
+                                                    ? 'bg-emerald-500'
+                                                    : rules.filter(r => r.status === 'pass').length / rules.length >= 0.4
+                                                        ? 'bg-amber-500'
+                                                        : 'bg-red-500'
                                                     }`}
                                                 style={{ width: `${(rules.filter(r => r.status === 'pass').length / rules.length) * 100}%` }}
                                             />
